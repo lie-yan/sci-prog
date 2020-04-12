@@ -3,7 +3,7 @@
 
 
 /**
- *  Given an integer x, a window size of ell bits, return the decomposition of 
+ *  Given an integer x, a window size ell, return the decomposition of 
  *  x under windowing scheme. 
  */
 std::vector<int> decompose_integer_windowing(int x, int ell) {
