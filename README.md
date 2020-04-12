@@ -4,9 +4,9 @@ Practicing the principles of David Gries' Science of Programming.
 
 ## Directories
 
-| folder  | content                                     |
-| ------- | ------------------------------------------- |
-| rbtree  | red black tree                              |
-| sort    | sorting algorithms                          |
-| num-rep | algorithms related to number representation |
+| folder | content                                     |
+| ------ | ------------------------------------------- |
+| rbtree | red black tree                              |
+| sort   | sorting algorithms                          |
+| number | algorithms related to number representation |
 
