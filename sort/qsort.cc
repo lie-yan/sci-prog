@@ -37,7 +37,7 @@ void qsort(std::vector<int>& v, int begin, int end) {
   // n > 1
       
   int p = begin + std::rand() % n;
-  // begin <= p && p < end
+  // begin <= p < end
   // pivot := v[p]
   
   int stash = end - 1;
