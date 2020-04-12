@@ -64,15 +64,15 @@ int logi(int b, int x) {
   int acc = 0;
 
   // Invariant: 
-  //    pow = b^acc
-  //    b^(acc + y) <= x
-  //    b^(acc + y + 1) > x
-  //    y > 0
-  // Counter: y
+  //    pow = b^acc <= x
+  //    b^(acc + y) <=x, b^(acc + y + 1) > x, y > 0
+  // Counter:
+  //    y
   while (pow * b <= x) {
     int k = 1;
     int p = b, squared = p * p;
-    // Invariant: squared = p*p = b^(2^k)
+    // Invariant:
+    //    squared = p*p = b^(2^k)
     while (pow * squared <= x) {
       ++k;
       p = squared;
