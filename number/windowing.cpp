@@ -70,13 +70,18 @@ int logi(int b, int x) {
   //    y > 0
   // Counter: y
   while (pow * b <= x) {
-
     int k = 1;
-    while (pow * powi_tower2(b, k) <= x) ++k;
+    int p = b, squared = p * p;
+    // Invariant: squared = p*p = b^(2^k)
+    while (pow * squared <= x) {
+      ++k;
+      p = squared;
+      squared *= squared;
+    }
     --k;
-    // k>=0 ∧ k = ARGMAX (pow * b^(2^k) <= x)
+    // k >= 0 ∧ k = ARGMAX {i, (pow * b^(2^i) <= x)} ∧ p = b^(2^k)
 
-    pow *= powi_tower2(b, k);
+    pow *= p;
     acc += powi(2, k);
   }
 
