@@ -12,17 +12,17 @@
 int partition(std::vector<int>& v, int begin, int end, int pivot) {
   int i = begin; 
   int j = end;
-  
-  // Let P(j) be ∀k∈[j, end): v[k] >= pivot.
-  // Let Q(i) be ∀k∈[begin, i): v[k] < pivot. 
-  // Invariant: P(j) ∧ Q(i)
+
+  // Let P(i) be ∀k∈[begin, i): v[k] < pivot.
+  // Let Q(j) be ∀k∈[j, end): v[k] >= pivot.
+  // Invariant: P(i) ∧ Q(j)
   while (i < j) {
     if (v[i] >= pivot) std::swap(v[i], v[--j]);
     else i++;
   }
   
-  // i = j
-  // Q(i)∧P(j) ⇒ P(j-1)∧P(j)
+  // i = j ∧ P(i) ∧ Q(j)
+  // Note: P(i)∧Q(j) ⇒ ¬Q(j-1)∧Q(j)
   return j;
 }
 

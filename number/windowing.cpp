@@ -53,8 +53,8 @@ int powi_tower2(int b, int e) {
 }
 
 /**
- *  Given a base b, an integer x, return an integer e such that b^e <= x and b^(e+1) > x.
- *  In other words, e = ⌊log_b x⌋. 
+ *  Given a base b, an integer x, return an integer e such that 
+ *  b^e <= x and b^(e+1) > x. In other words, e = ⌊log_b x⌋. 
  *  Pre: b > 1, x > 0
  */
 int logi(int b, int x) {
@@ -64,15 +64,15 @@ int logi(int b, int x) {
   int acc = 0;
 
   // Invariant: 
-  //    pow = b^acc
-  //    b^(acc + y) <= x
-  //    b^(acc + y + 1) > x
-  //    y > 0
-  // Counter: y
+  //    pow = b^acc <= x
+  //    b^(acc + y) <=x, b^(acc + y + 1) > x, y > 0
+  // Counter:
+  //    y
   while (pow * b <= x) {
     int k = 1;
     int p = b, squared = p * p;
-    // Invariant: squared = p*p = b^(2^k)
+    // Invariant:
+    //    squared = p*p = b^(2^k)
     while (pow * squared <= x) {
       ++k;
       p = squared;
@@ -89,7 +89,8 @@ int logi(int b, int x) {
 }
 
 /**
- *  Given a positive integer x, a window size ell, return a pair (i,j) sucht that
+ *  Given a positive integer x, a window size ell, return a pair (i,j) 
+ *  such that
  *    1) 1 <= i <= 2^ell - 1,
  *    2) j >= 0,
  *    3) i * 2^(ell*j) <= x,
@@ -107,8 +108,9 @@ std::tuple<int, int> solve_for_windowing(int x, int ell) {
 }
 
 /**
- *  Given a nonnegative integer x, a window size ell, return the representation of x
- *  under windowing scheme.
+ *  Given an integer x, a window size ell, return the representation 
+ *  of x under windowing scheme.
+ *  Pre: x > 0, ell > 0
  */
 std::vector<std::tuple<int, int>> windowing_decompose(int x, int ell) {
   assert(x > 0 && ell > 0);
