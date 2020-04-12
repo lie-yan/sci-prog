@@ -71,9 +71,10 @@ int logi(int b, int x) {
   // Counter: y
   while (pow * b <= x) {
 
-    int k = 0; 
-    while (pow * powi_tower2(b, k) <= x) k += 1;
-    k -= 1;
+    int k = 1;
+    while (pow * powi_tower2(b, k) <= x) ++k;
+    --k;
+    // k>=0 ∧ k = ARGMAX (pow * b^(2^k) <= x)
 
     pow *= powi_tower2(b, k);
     acc += powi(2, k);
