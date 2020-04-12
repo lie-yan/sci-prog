@@ -108,8 +108,9 @@ std::tuple<int, int> solve_for_windowing(int x, int ell) {
 }
 
 /**
- *  Given a nonnegative integer x, a window size ell, return the representation 
+ *  Given an integer x, a window size ell, return the representation 
  *  of x under windowing scheme.
+ *  Pre: x > 0, ell > 0
  */
 std::vector<std::tuple<int, int>> windowing_decompose(int x, int ell) {
   assert(x > 0 && ell > 0);
