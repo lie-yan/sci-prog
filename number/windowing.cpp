@@ -90,7 +90,7 @@ int logi(int b, int x) {
 
 /**
  *  Given a positive integer x, a window size ell, return a pair (i,j) 
- *  sucht that
+ *  such that
  *    1) 1 <= i <= 2^ell - 1,
  *    2) j >= 0,
  *    3) i * 2^(ell*j) <= x,
