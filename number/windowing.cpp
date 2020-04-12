@@ -97,6 +97,8 @@ int logi(int b, int x) {
  *    4) (i+1) * 2^(ell*j) > x,
  *    5) i * 2^(ell*(j+1)) > x.
  *  The above conditions imply (2^ell)^j <= x ∧ (2^ell)^(j+1) > x.
+ * 
+ *  Pre: x > 0, ell > 0
  */
 std::tuple<int, int> solve_for_windowing(int x, int ell) {
   assert(x > 0 && ell > 0);
