@@ -43,7 +43,13 @@ protected:
    *    2) Or, return its predeceessor if any.
    *    3) Otherwise return null.
    */
-  Node* predecessor(Node* t) const;
+  Node* predecessor(Node* t) const {
+    if (t == nullptr) return nullptr;
+
+    // t != nullptr
+
+    
+  }
   
   /**
    *  Given a node in the search tree, return its successor node. 
