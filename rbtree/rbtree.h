@@ -5,21 +5,34 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
-struct Node {
-  using T = int;
 
+class RBTree {
+public:
+  using K = int;
+  using V = int;
+  using T = std::pair<K, V>;
 
   enum {
-    BLACK,
+    BLACK = 0,
     RED,
   };
 
-  uint8_t color;
-  Node *p;
-  Node *left;
-  Node *right;
+  std::optional<T> find(K key) const;
+  void insert(K key, V value);
+  void erase(K key);
 
-  T payload;
+protected:
+  struct Node {
+    uint8_t color;
+    Node *p;
+    Node *left;
+    Node *right;
+
+    T payload;
+  };
+
+private:
+  Node* root;
 };
-
