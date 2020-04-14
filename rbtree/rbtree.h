@@ -46,21 +46,17 @@ protected:
    */
   Node* predecessor(Node* t) const {
     if (t == nullptr) {
-      return rightmost(root);
+      return descend_rightward(root);
     } else if (t->left != nullptr) { // has left subtree
-      return rightmost(t->left);
+      return descend_rightward(t->left);
     } else if (t->p == nullptr) { // no left subtree ∧ be root
       // no left subtree ∧ be root ⇒ initial node
       return nullptr;
     } else if (t->p->right == t) { // no left subtree ∧ be right child
       return t->p;
     } else { // no left subtree ∧ be left child
-
       // t->p != nullptr
-      auto[u, v] = std::tie(t->p, t->p->p);
-      while (v != nullptr && u == v->left) {
-        std::tie(u, v) = std::tie(v, v->p);
-      }
+      auto[u, v] = ascend_rightward(t->p);
       // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
       return v;
     }
@@ -77,9 +73,9 @@ protected:
    */
   Node* successor(Node* t) const {
     if (t==nullptr) {
-      return leftmost(root);
+      return descend_leftward(root);
     } else if (t->right != nullptr) { // has right subtree
-      return leftmost(t->right);
+      return descend_leftward(t->right);
     } else if (t->p == nullptr) { // no right subtree ∧ be root
       // no right subtree ∧ be root ⇒ final node
       return nullptr;
@@ -88,10 +84,7 @@ protected:
     } else { // no right subtree ∧ be right child
 
       // t->p != nullptr
-      auto[u, v] = std::tie(t->p, t->p->p);
-      while (v != nullptr && u == v->right) {
-        std::tie(u, v) = std::tie(v, v->p);
-      }
+      auto[u, v] = ascend_leftward(t->p);
       // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
       return v;
     }
@@ -101,7 +94,7 @@ protected:
    *  Given a node t, return the leftmost node in the subtree rooted at t.
    *  In the case of a null node, return null.
    */
-  static Node* leftmost(Node* t) {
+  static Node* descend_leftward(Node* t) {
     if (t == nullptr) return nullptr;
 
     // t != nullptr
@@ -116,7 +109,7 @@ protected:
    *  Given a node t, return the rightmost node in the subtree rooted at t.
    *  In the case of a null node, return null.
    */
-  static Node* rightmost(Node* t) {
+  static Node* descend_rightward(Node* t) {
     if (t == nullptr) return nullptr;
 
     // t != nullptr
@@ -125,6 +118,53 @@ protected:
       std::tie(p, q) = std::tie(q, q->right);
     }
     return p;
+  }
+
+  /**
+   *  Given a node t, return a pair (u, v) such that u is obtained by 
+   *  repeatedly following the edge to parent, starting from t, as long
+   *  as the source is a left child.
+   *  
+   *  The value of node v is
+   *    1) the parent of u, if u is the right child of its parent;
+   *    2) null, otherwise.
+   *  
+   *  Pre: t != nullptr
+   *  Post: (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
+   */
+  static std::tuple<Node*, Node*> ascend_rightward(Node* t) {
+    assert(t != nullptr);
+
+    auto[u, v] = std::tie(t, t->p);
+    while (v != nullptr && u == v->left) {
+      std::tie(u, v) = std::tie(v, v->p);
+    }
+    // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
+    return {u, v};
+  }
+
+
+  /**
+   *  Given a node t, return a pair (u, v) such that u is obtained by 
+   *  repeatedly following the edge to parent, starting from t, as long
+   *  as the source is a right child.
+   *  
+   *  The value of node v is
+   *    1) the parent of u, if u is the left child of its parent;
+   *    2) null, otherwise.
+   *  
+   *  Pre: t != nullptr
+   *  Post: (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
+   */
+  static std::tuple<Node*, Node*> ascend_leftward(Node* t) {
+    assert(t != nullptr);
+
+    auto[u, v] = std::tie(t, t->p);
+    while (v != nullptr && u == v->right) {
+      std::tie(u, v) = std::tie(v, v->p);
+    }
+    // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
+    return {u, v};
   }
 
 private:
