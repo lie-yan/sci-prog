@@ -48,7 +48,15 @@ protected:
 
     // t != nullptr
 
-    return nullptr; 
+    if (t->left != nullptr) { // has left subtree
+      return rightmost(t->left);
+    } else if (t->p == nullptr) { // no left subtree ∧ no parent ⇒ initial node
+      return nullptr;
+    } else if (t->p->right == t) { // no left subtree ∧ a right child
+      return t->p;
+    } else {
+      return predecessor(t->p);
+    }
   }
   
   /**
@@ -75,7 +83,6 @@ protected:
     }
     return p;
   }
-
 
   /**
    *  Given a node t, return the rightmost node in the subtree rooted at t.
