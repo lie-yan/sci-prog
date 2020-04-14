@@ -92,7 +92,7 @@ protected:
 
   /**
    *  Given a node t, return the leftmost node in the subtree rooted at t.
-   *  In the case of a null node, return null.
+   *  In the case of null node, return null.
    */
   static Node* leftmost(Node* t) {
     if (t == nullptr) return nullptr;
@@ -107,7 +107,7 @@ protected:
 
   /**
    *  Given a node t, return the rightmost node in the subtree rooted at t.
-   *  In the case of a null node, return null.
+   *  In the case of null node, return null.
    */
   static Node* rightmost(Node* t) {
     if (t == nullptr) return nullptr;
