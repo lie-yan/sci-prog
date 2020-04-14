@@ -47,14 +47,15 @@ protected:
     if (t == nullptr) return rightmost(root);
 
     // t != nullptr
-
     if (t->left != nullptr) { // has left subtree
       return rightmost(t->left);
-    } else if (t->p == nullptr) { // no left subtree ∧ no parent ⇒ initial node
+    } else if (t->p == nullptr) { // no left subtree ∧ no parent
+      // no left subtree ∧ no parent ⇒ initial node
       return nullptr;
-    } else if (t->p->right == t) { // no left subtree ∧ a right child
+    } else if (t->p->right == t) { // no left subtree ∧ be right child
       return t->p;
-    } else {
+    } else { // no left subtree ∧ be left child
+      // no left subtree ∧ be left child ⇒ predecessor(t) = predecessor(t->p)
       return predecessor(t->p);
     }
   }
