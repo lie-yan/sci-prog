@@ -8,6 +8,16 @@
 #include <optional>
 #include <iostream>
 
+/**
+ * @brief A red black tree.
+ *
+ * @invariant
+ *    1) Symmetric order.
+ *    2) Red links lean left.
+ *    3) No node has two red links connected to it.
+ *    4) Perfect black balance: every path from an internal node to a null link
+ *       has the same number of black links.
+ */
 class RBTree {
 public:
   using K = int;
@@ -36,6 +46,7 @@ public:
 
   /**
    * @brief Given a key and a value, insert (key, value) into the search tree.
+   *
    */
   void insert (K key, V value) {
     root_ = insert(root_, key, value);
@@ -81,6 +92,29 @@ public:
 
   void erase (K key) {
 
+  }
+
+  /**
+   * @brief Given a key, return the node corresponding to the largest key less
+   *    then or equal to the given key.
+   */
+  [[nodiscard]] Node* find (K key) const {
+    if (!root_) return nullptr;
+
+    auto[u, p]= std::pair((Node*)nullptr, root_);
+    // Let r := find(key) = MAX { x∈T | x.key ≤ key}
+    // For u == nullptr, set u->key := -INF.
+    // Invariant:
+    //    u->key < key
+    while (p) {
+      if (key < p->key)
+        p = p->left;
+      else if (p->key < key)
+        std::tie(u, p) = std::pair(p, p->right);
+      else
+        return p;
+    }
+    return u;
   }
 
   /**
@@ -163,6 +197,7 @@ protected:
    *  new root is not.
    *
    * @pre t && t->right
+   * @invariant rotate_left() preserves invariant 1) and 4).
    */
   static Node* rotate_left (Node* t) {
     assert(t && t->right);
@@ -185,6 +220,7 @@ protected:
    *  new root is not.
    *
    * @pre t && t->left && t->left->left
+   * @invariant rotate_right() preserves invariant 1) and 4).
    */
   static Node* rotate_right (Node* t) {
     assert(t && t->left && t->left->left);

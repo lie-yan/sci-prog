@@ -10,11 +10,13 @@ int main () {
 
   auto* p = new RBTree();
 
-  for (int i = 0; i < 20; i++) {
-    int x = std::rand() % 30 + 100;
-    p->insert(x, x);
+  std::vector<int> v = {1, 3, 4, 5, 7, 10};
+  for (auto        x: v) {
+    p->insert(x, 0);
   }
 
+  std::cout << p->find(6)->key << std::endl;
+  std::cout << p->find(7)->key << std::endl;
   std::cout << p->least()->key << std::endl;
   std::cout << p->greatest()->key << std::endl;
 
