@@ -149,7 +149,7 @@ protected:
    * @brief Given a node t, return whether the link pointing to its parent
    *  is red.
    *
-   * @note  (is_red(t) == true) ⇒ (t != nullptr)
+   * @note  is_red(t) ⇒ (t != nullptr)
    */
   static bool is_red (Node* t) {
     if (t == nullptr) return false;
