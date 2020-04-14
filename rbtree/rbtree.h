@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <iostream>
 
 class RBTree {
 public:
@@ -13,33 +14,67 @@ public:
   using V = int;
   using T = std::pair<K, V>;
 
-  enum {
+  enum class Color : uint8_t {
     BLACK = 0,
     RED,
   };
 
-protected:
   struct Node {
-    uint8_t color;
-    Node* p;
-    Node* left;
-    Node* right;
+    Color color;
+    Node* p     = nullptr;
+    Node* left  = nullptr;
+    Node* right = nullptr;
 
-    T payload;
+    K key;
+    V value;
+
+    Node (K key, V value, Color color)
+        : key(key), value(value), color(color) { }
   };
 
-public:
-  std::optional<T> find (K key) const;
+  [[nodiscard]] Node* root () const { return root_; }
+
   void erase (K key);
 
   /**
-   * @brief
-   * @param key
-   * @param value
-   *
+   * @brief Given a key and a value, insert (key, value) into the search tree.
    */
   void insert (K key, V value) {
+    root_ = insert(root_, key, value);
+    root_->p     = nullptr;
+    root_->color = Color::BLACK;
+  }
 
+  static Node* insert (Node* t, K key, V value) {
+    if (t == nullptr)
+      return new Node(key, value, Color::RED);
+
+    // t != nullptr
+
+    if (key < t->key) {
+      t->left    = insert(t->left, key, value);
+      t->left->p = t;
+    } else if (t->key < key) {
+      t->right    = insert(t->right, key, value);
+      t->right->p = t;
+    } else {
+      t->value = value;
+    }
+
+    if (is_red(t->right) && !is_red(t->left)) {
+      // t->right != nullptr
+      t = rotate_left(t);
+    }
+    if (is_red(t->left) && is_red(t->left->left)) {
+      // t->left && t->left->left
+      t = rotate_right(t);
+    }
+    if (is_red(t->left) && is_red(t->right)) {
+      // t->left && t->right
+      flip_colors(t);
+    }
+
+    return t;
   }
 
   /**
@@ -99,6 +134,76 @@ public:
     }
   }
 
+  [[nodiscard]] Node* least () const { return leftmost(root_); }
+
+  [[nodiscard]] Node* greatest () const { return rightmost(root_); }
+
+protected:
+  /**
+   * @brief Given a node t, return whether the link pointing to its parent
+   *  is red.
+   *
+   * @note  (is_red(t) == true) ⇒ (t != nullptr)
+   */
+  static bool is_red (Node* t) {
+    if (t == nullptr) return false;
+    else return t->color == Color::RED;
+  }
+
+  /**
+   * @brief Given a node t, left rotate around h and return the new root.
+   *
+   * @pre t && t->right
+   */
+  static Node* rotate_left (Node* t) {
+    assert(t && t->right);
+    auto p = t->p;
+
+    auto x = t->right;
+    // x != nullptr
+    std::tie(t->right, x->left)  = std::pair(x->left, t);
+    std::tie(x->color, t->color) = std::pair(t->color, Color::RED);
+
+    if (t->right) t->right->p = t;
+    t->p = x;
+    x->p = p;
+
+    return x;
+  }
+
+  /**
+   * @brief Given a node t, right rotate around h and return the new root.
+   *
+   * @pre t && t->left && t->left->left
+   */
+  static Node* rotate_right (Node* t) {
+    assert(t && t->left && t->left->left);
+
+    auto p = t->p;
+
+    auto x = t->left;
+    // x != nullptr
+    std::tie(t->left, x->right)  = std::pair(x->right, t);
+    std::tie(x->color, t->color) = std::pair(t->color, Color::RED);
+
+    if (t->left) t->left->p = t;
+    t->p = x;
+    x->p = p;
+
+    return x;
+  }
+
+  /**
+   * @brief Given a node t, flip the colors of itself and its two children.
+   */
+  static void flip_colors (Node* t) {
+    assert(t && t->color == Color::BLACK);
+
+    t->color        = Color::RED;
+    t->left->color  = Color::BLACK;
+    t->right->color = Color::BLACK;
+  }
+
   /**
    * @brief Given a node t, return the leftmost node in the subtree rooted at t.
    *
@@ -108,9 +213,9 @@ public:
     if (t == nullptr) return nullptr;
 
     // t != nullptr
-    auto[p, q] = std::tie(t, t->left);
+    auto[p, q] = std::pair(t, t->left);
     while (q != nullptr) {
-      std::tie(p, q) = std::tie(q, q->left);
+      std::tie(p, q) = std::pair(q, q->left);
     }
     return p;
   }
@@ -124,14 +229,12 @@ public:
     if (t == nullptr) return nullptr;
 
     // t != nullptr
-    auto[p, q] = std::tie(t, t->right);
+    auto[p, q] = std::pair(t, t->right);
     while (q != nullptr) {
-      std::tie(p, q) = std::tie(q, q->right);
+      std::tie(p, q) = std::pair(q, q->right);
     }
     return p;
   }
-
-protected:
 
   /**
    * @brief Given a node t, return a pair (u, v) such that u is obtained by
@@ -148,9 +251,9 @@ protected:
   static std::tuple<Node*, Node*> ascend_rightward (Node* t) {
     assert(t != nullptr);
 
-    auto[u, v] = std::tie(t, t->p);
+    auto[u, v] = std::pair(t, t->p);
     while (v != nullptr && u == v->left) {
-      std::tie(u, v) = std::tie(v, v->p);
+      std::tie(u, v) = std::pair(v, v->p);
     }
     // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
     return {u, v};
@@ -171,9 +274,9 @@ protected:
   static std::tuple<Node*, Node*> ascend_leftward (Node* t) {
     assert(t != nullptr);
 
-    auto[u, v] = std::tie(t, t->p);
+    auto[u, v] = std::pair(t, t->p);
     while (v != nullptr && u == v->right) {
-      std::tie(u, v) = std::tie(v, v->p);
+      std::tie(u, v) = std::pair(v, v->p);
     }
     // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
     return {u, v};
