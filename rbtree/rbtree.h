@@ -59,7 +59,7 @@ public:
       t->value = value;
     }
 
-    if (is_red(t->right) && !is_red(t->left)) {
+    if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
       // t->right != nullptr
       auto p = t->p;
       t = rotate_left(t);

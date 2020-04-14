@@ -11,7 +11,7 @@ int main () {
   auto* p = new RBTree();
 
   for (int i = 0; i < 20; i++) {
-    int x = std::rand() % 10 + 100;
+    int x = std::rand() % 30 + 100;
     p->insert(x, x);
   }
 
