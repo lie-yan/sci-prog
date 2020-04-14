@@ -43,7 +43,7 @@ protected:
    *    2) Otherwise, return its predecessor.
    *    3) In the case of null node, return the final node of the node sequence.
    */
-  Node* predecessor(Node* t) const {    
+  Node* predecessor(Node* t) const {
     if (t == nullptr) {
       return rightmost(root);
     } else if (t->left != nullptr) { // has left subtree
@@ -73,7 +73,27 @@ protected:
    *    2) Otherwise, return its successor.
    *    3) In the case of null node, return the initial node of the node sequence.
    */
-  Node* successor(Node* t) const;
+  Node* successor(Node* t) const {
+    if (t==nullptr) {
+      return leftmost(root);
+    } else if (t->right != nullptr) { // has right subtree
+      return leftmost(t->right);
+    } else if (t->p == nullptr) { // no right subtree ∧ be root
+      // no right subtree ∧ be root ⇒ final node
+      return nullptr;
+    } else if (t->p->left == t) { // no right subtree ∧ be left child
+      return t->p;
+    } else { // no right subtree ∧ be right child
+
+      // t->p != nullptr
+      auto[u, v] = std::tie(t->p, t->p->p);
+      while (v != nullptr && u == v->right) {
+        std::tie(u, v) = std::tie(v, v->p);
+      }
+      // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
+      return v;
+    }
+  }
 
   /**
    *  Given a node t, return the leftmost node in the subtree rooted at t.
