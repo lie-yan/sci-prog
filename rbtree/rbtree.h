@@ -30,18 +30,26 @@ protected:
 
 public:
   std::optional<T> find (K key) const;
-  void insert (K key, V value);
   void erase (K key);
 
-protected:
   /**
-   *  Given a node in the search tree, return its predecessor node. 
-   *  
+   * @brief
+   * @param key
+   * @param value
+   *
+   */
+  void insert (K key, V value) {
+
+  }
+
+  /**
+   * @brief Given a node in the search tree, return its predecessor node.
+   *
    *  The return value depends on the position of the node in the represented
    *  sequence.
    *    1) If it is the initial node, return null.
    *    2) Otherwise, return its predecessor.
-   *    3) In the case of null node, return the final node of the represented 
+   *    3) In the case of null node, return the final node of the represented
    *       sequence.
    */
   Node* predecessor (Node* t) const {
@@ -63,14 +71,14 @@ protected:
   }
 
   /**
-   *  Given a node in the search tree, return its successor node. 
-   *  
+   * @brief Given a node in the search tree, return its successor node.
+   *
    *  The return value depends on the position of the node in the represented
    *  sequence.
    *    1) If it is the final node, return null.
    *    2) Otherwise, return its successor.
-   *    3) In the case of null node, return the initial node of the 
-   *       represented sequence.
+   *    3) In the case of null node, return the initial node of the represented
+   *       sequence.
    */
   Node* successor (Node* t) const {
     if (t == nullptr) {
@@ -92,7 +100,8 @@ protected:
   }
 
   /**
-   *  Given a node t, return the leftmost node in the subtree rooted at t.
+   * @brief Given a node t, return the leftmost node in the subtree rooted at t.
+   *
    *  In the case of null node, return null.
    */
   static Node* leftmost (Node* t) {
@@ -107,7 +116,8 @@ protected:
   }
 
   /**
-   *  Given a node t, return the rightmost node in the subtree rooted at t.
+   * @brief Given a node t, return the rightmost node in the subtree rooted at t.
+   *
    *  In the case of null node, return null.
    */
   static Node* rightmost (Node* t) {
@@ -121,17 +131,19 @@ protected:
     return p;
   }
 
+protected:
+
   /**
-   *  Given a node t, return a pair (u, v) such that u is obtained by 
-   *  repeatedly following the edge to parent, starting from t, as long
-   *  as the source is a left child.
-   *  
+   * @brief Given a node t, return a pair (u, v) such that u is obtained by
+   *  repeatedly following the edge to parent, starting from t, as long as the
+   *  source is a left child.
+   *
    *  The value of node v is
    *    1) the parent of u, if u is the right child of its parent;
    *    2) null, otherwise.
-   *  
-   *  Pre: t != nullptr
-   *  Post: (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
+   *
+   * @pre t != nullptr
+   * @post (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
    */
   static std::tuple<Node*, Node*> ascend_rightward (Node* t) {
     assert(t != nullptr);
@@ -145,16 +157,16 @@ protected:
   }
 
   /**
-   *  Given a node t, return a pair (u, v) such that u is obtained by 
-   *  repeatedly following the edge to parent, starting from t, as long
-   *  as the source is a right child.
-   *  
+   * @brief Given a node t, return a pair (u, v) such that u is obtained by
+   *  repeatedly following the edge to parent, starting from t, as long as the
+   *  source is a right child.
+   *
    *  The value of node v is
    *    1) the parent of u, if u is the left child of its parent;
    *    2) null, otherwise.
-   *  
-   *  Pre: t != nullptr
-   *  Post: (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
+   *
+   *  @pre: t != nullptr
+   *  @post: (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
    */
   static std::tuple<Node*, Node*> ascend_leftward (Node* t) {
     assert(t != nullptr);
