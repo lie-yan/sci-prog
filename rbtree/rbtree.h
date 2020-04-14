@@ -46,9 +46,9 @@ protected:
    */
   Node* predecessor(Node* t) const {
     if (t == nullptr) {
-      return descend_rightward(root_);
+      return rightmost(root_);
     } else if (t->left != nullptr) { // has left subtree
-      return descend_rightward(t->left);
+      return rightmost(t->left);
     } else if (t->p == nullptr) { // no left subtree ∧ be root
       // no left subtree ∧ be root ⇒ initial node
       return nullptr;
@@ -73,9 +73,9 @@ protected:
    */
   Node* successor(Node* t) const {
     if (t==nullptr) {
-      return descend_leftward(root_);
+      return leftmost(root_);
     } else if (t->right != nullptr) { // has right subtree
-      return descend_leftward(t->right);
+      return leftmost(t->right);
     } else if (t->p == nullptr) { // no right subtree ∧ be root
       // no right subtree ∧ be root ⇒ final node
       return nullptr;
@@ -94,7 +94,7 @@ protected:
    *  Given a node t, return the leftmost node in the subtree rooted at t.
    *  In the case of a null node, return null.
    */
-  static Node* descend_leftward(Node* t) {
+  static Node* leftmost(Node* t) {
     if (t == nullptr) return nullptr;
 
     // t != nullptr
@@ -109,7 +109,7 @@ protected:
    *  Given a node t, return the rightmost node in the subtree rooted at t.
    *  In the case of a null node, return null.
    */
-  static Node* descend_rightward(Node* t) {
+  static Node* rightmost(Node* t) {
     if (t == nullptr) return nullptr;
 
     // t != nullptr
