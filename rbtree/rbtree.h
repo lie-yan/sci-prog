@@ -61,11 +61,15 @@ public:
 
     if (is_red(t->right) && !is_red(t->left)) {
       // t->right != nullptr
+      auto p = t->p;
       t = rotate_left(t);
+      t->p = p;
     }
     if (is_red(t->left) && is_red(t->left->left)) {
       // t->left && t->left->left
+      auto p = t->p;
       t = rotate_right(t);
+      t->p = p;
     }
     if (is_red(t->left) && is_red(t->right)) {
       // t->left && t->right
@@ -155,12 +159,13 @@ protected:
   /**
    * @brief Given a node t, left rotate around t and return the new root.
    *
+   *  The parent links below the new root are well set. The parent link of the
+   *  new root is not.
+   *
    * @pre t && t->right
    */
   static Node* rotate_left (Node* t) {
     assert(t && t->right);
-
-    auto p = t->p;
 
     auto x = t->right;
     // x != nullptr
@@ -169,7 +174,6 @@ protected:
 
     if (t->right) t->right->p = t;
     t->p = x;
-    x->p = p;
 
     return x;
   }
@@ -177,12 +181,13 @@ protected:
   /**
    * @brief Given a node t, right rotate around t and return the new root.
    *
+   *  The parent links below the new root are well set. The parent link of the
+   *  new root is not.
+   *
    * @pre t && t->left && t->left->left
    */
   static Node* rotate_right (Node* t) {
     assert(t && t->left && t->left->left);
-
-    auto p = t->p;
 
     auto x = t->left;
     // x != nullptr
@@ -191,7 +196,6 @@ protected:
 
     if (t->left) t->left->p = t;
     t->p = x;
-    x->p = p;
 
     return x;
   }
