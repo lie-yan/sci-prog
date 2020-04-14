@@ -69,9 +69,9 @@ protected:
     if (t == nullptr) return nullptr;
 
     // t != nullptr
-    auto[p, q] = std::pair(t, t->left);
+    auto[p, q] = std::tie(t, t->left);
     while (q != nullptr) {
-      std::tie(p, q) = {q, q->left};
+      std::tie(p, q) = std::tie(q, q->left);
     }
     return p;
   }
@@ -85,9 +85,9 @@ protected:
     if (t == nullptr) return nullptr;
 
     // t != nullptr
-    auto[p, q] = std::pair(t, t->right);
+    auto[p, q] = std::tie(t, t->right);
     while (q != nullptr) {
-      std::tie(p, q) = {q, q->right};
+      std::tie(p, q) = std::tie(q, q->right);
     }
     return p;
   }
