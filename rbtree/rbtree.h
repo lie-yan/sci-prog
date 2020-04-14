@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <optional>
 
-
 class RBTree {
 public:
   using K = int;
@@ -22,17 +21,17 @@ public:
 protected:
   struct Node {
     uint8_t color;
-    Node *p;
-    Node *left;
-    Node *right;
+    Node* p;
+    Node* left;
+    Node* right;
 
     T payload;
   };
 
 public:
-  std::optional<T> find(K key) const;
-  void insert(K key, V value);
-  void erase(K key);
+  std::optional<T> find (K key) const;
+  void insert (K key, V value);
+  void erase (K key);
 
 protected:
   /**
@@ -44,7 +43,7 @@ protected:
    *    3) In the case of null node, return the final node of the represented 
    *       sequence.
    */
-  Node* predecessor(Node* t) const {
+  Node* predecessor (Node* t) const {
     if (t == nullptr) {
       return rightmost(root_);
     } else if (t->left != nullptr) { // has left subtree
@@ -61,7 +60,7 @@ protected:
       return v;
     }
   }
-  
+
   /**
    *  Given a node in the search tree, return its successor node. 
    *  
@@ -71,8 +70,8 @@ protected:
    *    3) In the case of null node, return the initial node of the 
    *       represented sequence.
    */
-  Node* successor(Node* t) const {
-    if (t==nullptr) {
+  Node* successor (Node* t) const {
+    if (t == nullptr) {
       return leftmost(root_);
     } else if (t->right != nullptr) { // has right subtree
       return leftmost(t->right);
@@ -94,7 +93,7 @@ protected:
    *  Given a node t, return the leftmost node in the subtree rooted at t.
    *  In the case of null node, return null.
    */
-  static Node* leftmost(Node* t) {
+  static Node* leftmost (Node* t) {
     if (t == nullptr) return nullptr;
 
     // t != nullptr
@@ -109,7 +108,7 @@ protected:
    *  Given a node t, return the rightmost node in the subtree rooted at t.
    *  In the case of null node, return null.
    */
-  static Node* rightmost(Node* t) {
+  static Node* rightmost (Node* t) {
     if (t == nullptr) return nullptr;
 
     // t != nullptr
@@ -132,7 +131,7 @@ protected:
    *  Pre: t != nullptr
    *  Post: (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
    */
-  static std::tuple<Node*, Node*> ascend_rightward(Node* t) {
+  static std::tuple<Node*, Node*> ascend_rightward (Node* t) {
     assert(t != nullptr);
 
     auto[u, v] = std::tie(t, t->p);
@@ -142,7 +141,6 @@ protected:
     // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
     return {u, v};
   }
-
 
   /**
    *  Given a node t, return a pair (u, v) such that u is obtained by 
@@ -156,7 +154,7 @@ protected:
    *  Pre: t != nullptr
    *  Post: (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
    */
-  static std::tuple<Node*, Node*> ascend_leftward(Node* t) {
+  static std::tuple<Node*, Node*> ascend_leftward (Node* t) {
     assert(t != nullptr);
 
     auto[u, v] = std::tie(t, t->p);
