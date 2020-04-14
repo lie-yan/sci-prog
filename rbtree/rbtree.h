@@ -34,8 +34,6 @@ public:
 
   [[nodiscard]] Node* root () const { return root_; }
 
-  void erase (K key);
-
   /**
    * @brief Given a key and a value, insert (key, value) into the search tree.
    */
@@ -75,6 +73,10 @@ public:
     }
 
     return t;
+  }
+
+  void erase (K key) {
+
   }
 
   /**
@@ -151,12 +153,13 @@ protected:
   }
 
   /**
-   * @brief Given a node t, left rotate around h and return the new root.
+   * @brief Given a node t, left rotate around t and return the new root.
    *
    * @pre t && t->right
    */
   static Node* rotate_left (Node* t) {
     assert(t && t->right);
+
     auto p = t->p;
 
     auto x = t->right;
@@ -172,7 +175,7 @@ protected:
   }
 
   /**
-   * @brief Given a node t, right rotate around h and return the new root.
+   * @brief Given a node t, right rotate around t and return the new root.
    *
    * @pre t && t->left && t->left->left
    */
