@@ -37,7 +37,8 @@ protected:
   /**
    *  Given a node in the search tree, return its predecessor node. 
    *  
-   *  The result depends on the position of the node in the represented sequence.
+   *  The return value depends on the position of the node in the represented
+   *  sequence.
    *    1) If it is the initial node, return null.
    *    2) Otherwise, return its predecessor.
    *    3) In the case of null node, return the final node of the represented 
@@ -64,7 +65,8 @@ protected:
   /**
    *  Given a node in the search tree, return its successor node. 
    *  
-   *  The result depends on the position of the node in the represented sequence.
+   *  The return value depends on the position of the node in the represented
+   *  sequence.
    *    1) If it is the final node, return null.
    *    2) Otherwise, return its successor.
    *    3) In the case of null node, return the initial node of the 

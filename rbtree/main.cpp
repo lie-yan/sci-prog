@@ -6,6 +6,8 @@
 #include <iostream>
 
 int main () {
+
+  auto* p = new RBTree();
   std::cout << "hello\n";
 
 }
