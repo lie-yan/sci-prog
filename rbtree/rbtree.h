@@ -38,28 +38,59 @@ protected:
   /**
    *  Given a node in the search tree, return its predecessor node. 
    *  
-   *  The rule is as follows.
-   *    1) If the node is null, return null.
-   *    2) Or, return its predeceessor if any.
-   *    3) Otherwise return null.
+   *  The result depends on the position of the node in the node sequence.
+   *    1) If it is the initial node, return null.
+   *    2) Otherwise, return its predecessor.
+   *    3) In the case of null node, return the final node of the node sequence.
    */
   Node* predecessor(Node* t) const {
-    if (t == nullptr) return nullptr;
+    if (t == nullptr) return rightmost(root);
 
     // t != nullptr
 
-    
+    return nullptr; 
   }
   
   /**
    *  Given a node in the search tree, return its successor node. 
    *  
-   *  The rule is as follows.
-   *    1) If the node is null, return null.
-   *    2) Or, return its successor if any.
-   *    3) Otherwise return null.
+   *  The result depends on the position of the node in the node sequence.
+   *    1) If it is the final node, return null.
+   *    2) Otherwise, return its successor.
+   *    3) In the case of null node, return the initial node of the node sequence.
    */
   Node* successor(Node* t) const;
+
+  /**
+   *  Given a node t, return the leftmost node in the subtree rooted at t.
+   *  In the case of a null node, return null.
+   */
+  Node* leftmost(Node* t) const {
+    if (t == nullptr) return nullptr;
+
+    // t != nullptr
+    auto[p, q] = std::pair(t, t->left);
+    while (q != nullptr) {
+      std::tie(p, q) = {q, q->left};
+    }
+    return p;
+  }
+
+
+  /**
+   *  Given a node t, return the rightmost node in the subtree rooted at t.
+   *  In the case of a null node, return null.
+   */
+  Node* rightmost(Node* t) const {
+    if (t == nullptr) return nullptr;
+
+    // t != nullptr
+    auto[p, q] = std::pair(t, t->right);
+    while (q != nullptr) {
+      std::tie(p, q) = {q, q->right};
+    }
+    return p;
+  }
 
 private:
   Node* root;
