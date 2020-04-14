@@ -46,7 +46,7 @@ protected:
    */
   Node* predecessor(Node* t) const {
     if (t == nullptr) {
-      return descend_rightward(root);
+      return descend_rightward(root_);
     } else if (t->left != nullptr) { // has left subtree
       return descend_rightward(t->left);
     } else if (t->p == nullptr) { // no left subtree ∧ be root
@@ -73,7 +73,7 @@ protected:
    */
   Node* successor(Node* t) const {
     if (t==nullptr) {
-      return descend_leftward(root);
+      return descend_leftward(root_);
     } else if (t->right != nullptr) { // has right subtree
       return descend_leftward(t->right);
     } else if (t->p == nullptr) { // no right subtree ∧ be root
@@ -168,5 +168,6 @@ protected:
   }
 
 private:
-  Node* root;
+  Node* root_;
+  int size_;
 };
