@@ -9,7 +9,7 @@
 #include <iostream>
 
 /**
- * @brief A red black tree.
+ * @brief A red-black tree.
  *
  * @invariant
  *    1) Symmetric order.
