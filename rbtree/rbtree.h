@@ -317,8 +317,8 @@ protected:
    *    1) the parent of u, if u is the left child of its parent;
    *    2) null, otherwise.
    *
-   *  @pre: t != nullptr
-   *  @post: (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
+   * @pre: t != nullptr
+   * @post: (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
    */
   static std::tuple<Node*, Node*> ascend_leftward (Node* t) {
     assert(t != nullptr);
