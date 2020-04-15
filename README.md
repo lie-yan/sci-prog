@@ -6,7 +6,7 @@ Practicing the principles of David Gries' Science of Programming.
 
 | folder | content                                     |
 | ------ | ------------------------------------------- |
+| number | algorithms related to number representation |
 | rbtree | red black tree                              |
 | sort   | sorting algorithms                          |
-| number | algorithms related to number representation |
 
