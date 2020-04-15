@@ -47,6 +47,7 @@ public:
   /**
    * @brief Given a key and a value, insert (key, value) into the search tree.
    *
+   *    If key already exists in the search tree, replace the value.
    */
   void insert (K key, V value) {
     root_ = insert(root_, key, value);
@@ -97,24 +98,28 @@ public:
   /**
    * @brief Given a key, return the node corresponding to the largest key less
    *    then or equal to the given key.
+   *
+   *    If no such node exists, return null.
    */
   [[nodiscard]] Node* find (K key) const {
-    if (!root_) return nullptr;
-
     auto[u, p]= std::pair((Node*)nullptr, root_);
-    // Let r := find(key) = MAX { x∈T | x ≤ key}
-    // For u == nullptr, set u->key := -INF.
+    // Let P be the set of nodes that have been compared with the given key.
+    // Let P' be { x ∈ P | x.key ≤ key }.
+    //
     // Invariant:
-    //    Let p0 := p in the last interation.
-    //    u->key = MAX { x∈T | x ≤ p0.key  ∧ x < key}
+    //    Q(u): u is the node in P' with the maximum key.
     while (p) {
       if (key < p->key)
         p = p->left;
       else if (p->key < key)
         std::tie(u, p) = std::pair(p, p->right);
       else
-        return p;
+        std::tie(u, p) = std::pair(p, nullptr);
     }
+
+    // Property:
+    //    The least element no less than key, and the greatest element no
+    //    greater than key must be in P.
     return u;
   }
 

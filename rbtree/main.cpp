@@ -10,7 +10,7 @@ int main () {
 
   auto* p = new RBTree();
 
-  std::vector<int> v = {1, 3, 4, 5, 7, 10};
+  std::vector<int> v = {1, 3, 5, 7, 10};
   for (auto        x: v) {
     p->insert(x, 0);
   }
