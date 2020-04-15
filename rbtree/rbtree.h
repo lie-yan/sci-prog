@@ -55,42 +55,6 @@ public:
     root_->color = Color::BLACK;
   }
 
-  static Node* insert (Node* t, K key, V value) {
-    if (t == nullptr)
-      return new Node(key, value, Color::RED);
-
-    // t != nullptr
-
-    if (key < t->key) {
-      t->left    = insert(t->left, key, value);
-      t->left->p = t;
-    } else if (t->key < key) {
-      t->right    = insert(t->right, key, value);
-      t->right->p = t;
-    } else {
-      t->value = value;
-    }
-
-    if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
-      // t->right != nullptr
-      auto p = t->p;
-      t = rotate_left(t);
-      t->p = p;
-    }
-    if (is_red(t->left) && is_red(t->left->left)) {
-      // t->left && t->left->left
-      auto p = t->p;
-      t = rotate_right(t);
-      t->p = p;
-    }
-    if (is_red(t->left) && is_red(t->right)) {
-      // t->left && t->right
-      flip_colors(t);
-    }
-
-    return t;
-  }
-
   void erase (K key) {
 
   }
@@ -185,6 +149,42 @@ public:
   [[nodiscard]] Node* greatest () const { return rightmost(root_); }
 
 protected:
+  static Node* insert (Node* t, K key, V value) {
+    if (t == nullptr)
+      return new Node(key, value, Color::RED);
+
+    // t != nullptr
+
+    if (key < t->key) {
+      t->left    = insert(t->left, key, value);
+      t->left->p = t;
+    } else if (t->key < key) {
+      t->right    = insert(t->right, key, value);
+      t->right->p = t;
+    } else {
+      t->value = value;
+    }
+
+    if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
+      // t->right != nullptr
+      auto p = t->p;
+      t = rotate_left(t);
+      t->p = p;
+    }
+    if (is_red(t->left) && is_red(t->left->left)) {
+      // t->left && t->left->left
+      auto p = t->p;
+      t = rotate_right(t);
+      t->p = p;
+    }
+    if (is_red(t->left) && is_red(t->right)) {
+      // t->left && t->right
+      flip_colors(t);
+    }
+
+    return t;
+  }
+
   /**
    * @brief Given a node t, return whether the link pointing to its parent
    *  is red.
