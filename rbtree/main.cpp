@@ -15,8 +15,8 @@ int main () {
     p->insert(x, 0);
   }
 
-  std::cout << p->find(6)->key << std::endl;
-  std::cout << p->find(7)->key << std::endl;
+  std::cout << p->lower_bound(6)->key << std::endl;
+  std::cout << p->lower_bound(7)->key << std::endl;
   std::cout << p->least()->key << std::endl;
   std::cout << p->greatest()->key << std::endl;
 

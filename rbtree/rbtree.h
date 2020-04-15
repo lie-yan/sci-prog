@@ -20,9 +20,9 @@
  */
 class RBTree {
 public:
-  using K = int;
-  using V = int;
-  using T = std::pair<K, V>;
+  using Key = int;
+  using Value = int;
+  using Tuple = std::pair<Key, Value>;
 
   enum class Color : uint8_t {
     BLACK = 0,
@@ -35,10 +35,10 @@ public:
     Node* left  = nullptr;
     Node* right = nullptr;
 
-    K key;
-    V value;
+    Key   key;
+    Value value;
 
-    Node (K key, V value, Color color)
+    Node (Key key, Value value, Color color)
         : key(key), value(value), color(color) { }
   };
 
@@ -49,13 +49,13 @@ public:
    *
    *    If key already exists in the search tree, replace the value.
    */
-  void insert (K key, V value) {
+  void insert (Key key, Value value) {
     root_ = insert(root_, key, value);
     root_->p     = nullptr;
     root_->color = Color::BLACK;
   }
 
-  void erase (K key) {
+  void erase (Key key) {
 
   }
 
@@ -65,7 +65,7 @@ public:
    *
    *    If no such node exists, return null.
    */
-  [[nodiscard]] Node* find (K key) const {
+  [[nodiscard]] Node* lower_bound (const Key& key) const {
     auto[u, p]= std::pair((Node*)nullptr, root_);
     // Let P be the set of nodes that have been compared with the given key.
     // Let P' be { x ∈ P | x.key ≤ key }.
@@ -149,7 +149,7 @@ public:
   [[nodiscard]] Node* greatest () const { return rightmost(root_); }
 
 protected:
-  static Node* insert (Node* t, K key, V value) {
+  static Node* insert (Node* t, Key key, Value value) {
     if (t == nullptr)
       return new Node(key, value, Color::RED);
 
