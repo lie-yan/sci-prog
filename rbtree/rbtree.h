@@ -102,10 +102,11 @@ public:
     if (!root_) return nullptr;
 
     auto[u, p]= std::pair((Node*)nullptr, root_);
-    // Let r := find(key) = MAX { x∈T | x.key ≤ key}
+    // Let r := find(key) = MAX { x∈T | x ≤ key}
     // For u == nullptr, set u->key := -INF.
     // Invariant:
-    //    u->key < key
+    //    Let p0 := p in the last interation.
+    //    u->key = MAX { x∈T | x ≤ p0.key  ∧ x < key}
     while (p) {
       if (key < p->key)
         p = p->left;
