@@ -22,7 +22,6 @@ class RBTree {
 public:
   using Key = int;
   using Value = int;
-  using Tuple = std::pair<Key, Value>;
 
   enum class Color : uint8_t {
     BLACK = 0,
