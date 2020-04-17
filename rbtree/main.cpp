@@ -29,9 +29,4 @@ int main () {
   print_sequence(p);
   std::cout << "\n";
 
-  while (!p->is_empty()) {
-    p->delete_min();
-    print_sequence(p);
-    std::cout << "\n";
-  }
 }

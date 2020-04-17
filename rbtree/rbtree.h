@@ -50,8 +50,8 @@ public:
    */
   void insert (Key key, Value value) {
     root_ = insert(root_, key, value);
-    repair_parent_link(root_, nullptr);
-    root_->color = Color::BLACK;
+    root_->parent = nullptr;
+    root_->color  = Color::BLACK;
   }
 
   void erase (Key key) {
@@ -59,22 +59,8 @@ public:
   }
 
   /**
-   * @brief Remove the minimum element from the tree.
-   */
-  void delete_min () {
-    assert(!is_empty());
-    if (!is_red(root_->left) && !is_red(root_->right))
-      root_->color = Color::RED;
-    root_ = delete_min(root_);
-    if (!is_empty()) {
-      repair_parent_link(root_, nullptr);
-      root_->color = Color::BLACK;
-    }
-  }
-
-  /**
    * @brief Given a key, return the node corresponding to the greatest key less
-   *    then or equal to the given key.
+   *    than or equal to the given key.
    *
    *    If no such node exists, return null.
    */
@@ -221,91 +207,6 @@ protected:
   }
 
   /**
-   * @brief Given a node t, delete the minimum node and return the new root.
-   *
-   * @post The new root is hung under the old parent of t.
-   */
-  Node* delete_min (Node* t) {
-    // Invariant: the current node in the equivalent 2-3-tree is not a 2-node.
-
-    if (t->left == nullptr) {
-      assert(!t->right);
-      delete_terminal(t);
-      return nullptr;
-    }
-
-    if (!is_red(t->left) && !is_red(t->left->left)) {
-      assert(is_red(t));
-      t = move_red_left(t);
-    }
-
-    t->left = delete_min(t->left);
-
-    return balance(t);
-  }
-
-  /**
-   * @brief Make t->left or one of its children red.
-   *
-   * @pre t is red, and t->left and t->left->left are black
-   * @post The new root is hung under the old parent of t.
-   */
-  static Node* move_red_left (Node* t) {
-    assert(is_red(t) && !is_red(t->left)
-           && !is_red(t->left->left));
-
-    flip_colors(t);
-    // is_red(t->left)
-    if (is_red(t->right->left)) { // not a 2-node
-      t->right = rotate_right(t->right);
-      repair_parent_link(t->right, t);
-
-      // is_red(t->right->right)
-
-      auto tmp = t->parent;
-      t = rotate_left(t);
-      repair_parent_link(t, tmp);
-      // is_red(t->right)
-    }
-    // is_red(t->left) if the branch condition above is false;
-    return t;
-  }
-
-  /**
-   * @brief Given a node t, balance the subtree rooted at t if necessary.
-   *
-   * @return the root of the balanced subtree
-   * @pre (t != nullptr)
-   * @post The new root is hung under the old parent of t.
-   */
-  static Node* balance (Node* t) {
-    assert(t);
-
-    if (is_red(t->right)) {
-      auto tmp = t->parent;
-      t = rotate_left(t);
-      repair_parent_link(t, tmp);
-    }
-    if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
-      // t->right != nullptr
-      auto tmp = t->parent;
-      t        = rotate_left(t);
-      repair_parent_link(t, tmp);
-    }
-    if (is_red(t->left) && is_red(t->left->left)) {
-      // t->left && t->left->left
-      auto tmp = t->parent;
-      t        = rotate_right(t);
-      repair_parent_link(t, tmp);
-    }
-    if (is_red(t->left) && is_red(t->right)) {
-      // t->left && t->right
-      flip_colors(t);
-    }
-    return t;
-  }
-
-  /**
    * @brief Given a node t, return whether the link pointing to its parent
    *  is red.
    *
@@ -397,7 +298,8 @@ protected:
   }
 
   /**
-   * @brief Given a node t, return the rightmost node in the subtree rooted at t.
+   * @brief Given a node t, return the rightmost node in the subtree rooted 
+   *  at t.
    *
    *  In the case of null node, return null.
    */
