@@ -224,11 +224,11 @@ protected:
    *  The parent links below the new root are well set. The parent link of the
    *  new root is not.
    *
-   * @pre t && t->left && t->left->left
+   * @pre t && t->left
    * @invariant rotate_right() preserves invariant 1) and 4).
    */
   static Node* rotate_right (Node* t) {
-    assert(t && t->left && t->left->left);
+    assert(t && t->left);
 
     auto x = t->left;
     // x != nullptr
