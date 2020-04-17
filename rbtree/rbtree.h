@@ -58,8 +58,11 @@ public:
 
   }
 
+  /**
+   * @brief Remove the minimum element from the tree.
+   */
   void delete_min () {
-    assert(root_);
+    assert(!is_empty());
     if (!is_red(root_->left) && !is_red(root_->right))
       root_->color = Color::RED;
     root_ = delete_min(root_);
@@ -164,6 +167,9 @@ protected:
     if (t) t->parent = parent;
   }
 
+  /**
+   * @post The new root is hung under the old parent of t.
+   */
   static Node* insert (Node* t, Key key, Value value) {
     if (t == nullptr)
       return new Node(key, value, Color::RED);
@@ -200,59 +206,101 @@ protected:
     return t;
   }
 
+  static void delete_terminal (Node* t) {
+    assert(t && !t->left && !t->right);
+
+    if (!t->parent) {
+      void(); // do nothing
+    } else if (t->parent->left == t) {
+      t->parent->left = nullptr;
+    } else {
+      t->parent->right = nullptr;
+    }
+
+    delete t;
+  }
+
   /**
-   * @brief Given a node t, return the new root after deleting the minimum node
-   *    in the subtree rooted at t.
+   * @brief Given a node t, delete the minimum node and return the new root.
+   *
+   * @post The new root is hung under the old parent of t.
    */
   Node* delete_min (Node* t) {
+    // Invariant: the current node in the equivalent 2-3-tree is not a 2-node.
+
     if (t->left == nullptr) {
-      delete t;
+      assert(!t->right);
+      delete_terminal(t);
       return nullptr;
     }
 
     if (!is_red(t->left) && !is_red(t->left->left)) {
-      auto tmp = t->parent;
+      assert(is_red(t));
       t = move_red_left(t);
-      repair_parent_link(t, tmp);
     }
 
     t->left = delete_min(t->left);
-    repair_parent_link(t->left, t);
+
     return balance(t);
   }
 
   /**
-   * @brief
-   * @param t
-   * @return
+   * @brief Make t->left or one of its children red.
+   *
+   * @pre t is red, and t->left and t->left->left are black
+   * @post The new root is hung under the old parent of t.
    */
   static Node* move_red_left (Node* t) {
+    assert(is_red(t) && !is_red(t->left)
+           && !is_red(t->left->left));
+
     flip_colors(t);
-    if (is_red(t->right->left)) {
+    // is_red(t->left)
+    if (is_red(t->right->left)) { // not a 2-node
       t->right = rotate_right(t->right);
       repair_parent_link(t->right, t);
+
+      // is_red(t->right->right)
 
       auto tmp = t->parent;
       t = rotate_left(t);
       repair_parent_link(t, tmp);
+      // is_red(t->right)
     }
+    // is_red(t->left) if the branch condition above is false;
     return t;
   }
 
   /**
-   * @brief Given a node t, rebalance the subtree rooted at t if necessary.
+   * @brief Given a node t, balance the subtree rooted at t if necessary.
    *
-   *    If t has a right leaning child link, left rotate around t.
-   *
-   * @return the new root of the rebalanced subtree
-   * @pre (t!=nullptr)
+   * @return the root of the balanced subtree
+   * @pre (t != nullptr)
+   * @post The new root is hung under the old parent of t.
    */
   static Node* balance (Node* t) {
     assert(t);
+
     if (is_red(t->right)) {
       auto tmp = t->parent;
       t = rotate_left(t);
       repair_parent_link(t, tmp);
+    }
+    if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
+      // t->right != nullptr
+      auto tmp = t->parent;
+      t        = rotate_left(t);
+      repair_parent_link(t, tmp);
+    }
+    if (is_red(t->left) && is_red(t->left->left)) {
+      // t->left && t->left->left
+      auto tmp = t->parent;
+      t        = rotate_right(t);
+      repair_parent_link(t, tmp);
+    }
+    if (is_red(t->left) && is_red(t->right)) {
+      // t->left && t->right
+      flip_colors(t);
     }
     return t;
   }
@@ -319,8 +367,12 @@ protected:
    */
   static void flip_colors (Node* t) {
     auto flip = [] (Color c) -> Color {
-      if (c == Color::BLACK) return Color::RED;
-      else return Color::BLACK;
+      switch (c) {
+      case Color::BLACK:
+        return Color::RED;
+      case Color::RED:
+        return Color::BLACK;
+      }
     };
 
     t->color        = flip(t->color);
