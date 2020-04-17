@@ -30,9 +30,9 @@ public:
 
   struct Node {
     Color color;
-    Node* p     = nullptr;
-    Node* left  = nullptr;
-    Node* right = nullptr;
+    Node* parent = nullptr;
+    Node* left   = nullptr;
+    Node* right  = nullptr;
 
     Key   key;
     Value value;
@@ -50,8 +50,8 @@ public:
    */
   void insert (Key key, Value value) {
     root_ = insert(root_, key, value);
-    root_->p     = nullptr;
-    root_->color = Color::BLACK;
+    root_->parent = nullptr;
+    root_->color  = Color::BLACK;
   }
 
   void erase (Key key) {
@@ -101,14 +101,14 @@ public:
       return rightmost(root_);
     } else if (t->left != nullptr) { // has left subtree
       return rightmost(t->left);
-    } else if (t->p == nullptr) { // no left subtree ∧ be root
+    } else if (t->parent == nullptr) { // no left subtree ∧ be root
       // no left subtree ∧ be root ⇒ initial node
       return nullptr;
-    } else if (t->p->right == t) { // no left subtree ∧ be right child
-      return t->p;
+    } else if (t->parent->right == t) { // no left subtree ∧ be right child
+      return t->parent;
     } else { // no left subtree ∧ be left child
-      // t->p != nullptr
-      auto[u, v] = ascend_rightward(t->p);
+      // t->parent != nullptr
+      auto[u, v] = ascend_rightward(t->parent);
       // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
       return v;
     }
@@ -129,15 +129,15 @@ public:
       return leftmost(root_);
     } else if (t->right != nullptr) { // has right subtree
       return leftmost(t->right);
-    } else if (t->p == nullptr) { // no right subtree ∧ be root
+    } else if (t->parent == nullptr) { // no right subtree ∧ be root
       // no right subtree ∧ be root ⇒ final node
       return nullptr;
-    } else if (t->p->left == t) { // no right subtree ∧ be left child
-      return t->p;
+    } else if (t->parent->left == t) { // no right subtree ∧ be left child
+      return t->parent;
     } else { // no right subtree ∧ be right child
 
-      // t->p != nullptr
-      auto[u, v] = ascend_leftward(t->p);
+      // t->parent != nullptr
+      auto[u, v] = ascend_leftward(t->parent);
       // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
       return v;
     }
@@ -155,26 +155,26 @@ protected:
     // t != nullptr
 
     if (key < t->key) {
-      t->left    = insert(t->left, key, value);
-      t->left->p = t;
+      t->left         = insert(t->left, key, value);
+      t->left->parent = t;
     } else if (t->key < key) {
-      t->right    = insert(t->right, key, value);
-      t->right->p = t;
+      t->right         = insert(t->right, key, value);
+      t->right->parent = t;
     } else {
       t->value = value;
     }
 
     if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
       // t->right != nullptr
-      auto p = t->p;
+      auto parent = t->parent;
       t = rotate_left(t);
-      t->p = p;
+      t->parent = parent;
     }
     if (is_red(t->left) && is_red(t->left->left)) {
       // t->left && t->left->left
-      auto p = t->p;
+      auto parent = t->parent;
       t = rotate_right(t);
-      t->p = p;
+      t->parent = parent;
     }
     if (is_red(t->left) && is_red(t->right)) {
       // t->left && t->right
@@ -212,8 +212,8 @@ protected:
     std::tie(t->right, x->left)  = std::pair(x->left, t);
     std::tie(x->color, t->color) = std::pair(t->color, Color::RED);
 
-    if (t->right) t->right->p = t;
-    t->p = x;
+    if (t->right) t->right->parent = t;
+    t->parent = x;
 
     return x;
   }
@@ -235,8 +235,8 @@ protected:
     std::tie(t->left, x->right)  = std::pair(x->right, t);
     std::tie(x->color, t->color) = std::pair(t->color, Color::RED);
 
-    if (t->left) t->left->p = t;
-    t->p = x;
+    if (t->left) t->left->parent = t;
+    t->parent = x;
 
     return x;
   }
@@ -299,9 +299,9 @@ protected:
   static std::tuple<Node*, Node*> ascend_rightward (Node* t) {
     assert(t != nullptr);
 
-    auto[u, v] = std::pair(t, t->p);
+    auto[u, v] = std::pair(t, t->parent);
     while (v != nullptr && u == v->left) {
-      std::tie(u, v) = std::pair(v, v->p);
+      std::tie(u, v) = std::pair(v, v->parent);
     }
     // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
     return {u, v};
@@ -322,9 +322,9 @@ protected:
   static std::tuple<Node*, Node*> ascend_leftward (Node* t) {
     assert(t != nullptr);
 
-    auto[u, v] = std::pair(t, t->p);
+    auto[u, v] = std::pair(t, t->parent);
     while (v != nullptr && u == v->right) {
-      std::tie(u, v) = std::pair(v, v->p);
+      std::tie(u, v) = std::pair(v, v->parent);
     }
     // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
     return {u, v};
