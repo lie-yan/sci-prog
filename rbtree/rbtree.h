@@ -41,7 +41,7 @@ public:
         : key(key), value(value), color(color) { }
   };
 
-  [[nodiscard]] Node* root () const { return root_; }
+  [[nodiscard]] bool is_empty () const { return !root_; }
 
   /**
    * @brief Given a key and a value, insert (key, value) into the search tree.
@@ -50,12 +50,23 @@ public:
    */
   void insert (Key key, Value value) {
     root_ = insert(root_, key, value);
-    root_->parent = nullptr;
-    root_->color  = Color::BLACK;
+    repair_parent_link(root_, nullptr);
+    root_->color = Color::BLACK;
   }
 
   void erase (Key key) {
 
+  }
+
+  void delete_min () {
+    assert(root_);
+    if (!is_red(root_->left) && !is_red(root_->right))
+      root_->color = Color::RED;
+    root_ = delete_min(root_);
+    if (!is_empty()) {
+      repair_parent_link(root_, nullptr);
+      root_->color = Color::BLACK;
+    }
   }
 
   /**
@@ -148,6 +159,11 @@ public:
   [[nodiscard]] Node* greatest () const { return rightmost(root_); }
 
 protected:
+
+  static void repair_parent_link (Node* t, Node* parent) {
+    if (t) t->parent = parent;
+  }
+
   static Node* insert (Node* t, Key key, Value value) {
     if (t == nullptr)
       return new Node(key, value, Color::RED);
@@ -155,32 +171,89 @@ protected:
     // t != nullptr
 
     if (key < t->key) {
-      t->left         = insert(t->left, key, value);
-      t->left->parent = t;
+      t->left = insert(t->left, key, value);
+      repair_parent_link(t->left, t);
     } else if (t->key < key) {
-      t->right         = insert(t->right, key, value);
-      t->right->parent = t;
+      t->right = insert(t->right, key, value);
+      repair_parent_link(t->right, t);
     } else {
       t->value = value;
     }
 
     if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
       // t->right != nullptr
-      auto parent = t->parent;
+      auto tmp = t->parent;
       t = rotate_left(t);
-      t->parent = parent;
+      repair_parent_link(t, tmp);
     }
     if (is_red(t->left) && is_red(t->left->left)) {
       // t->left && t->left->left
-      auto parent = t->parent;
-      t = rotate_right(t);
-      t->parent = parent;
+      auto tmp = t->parent;
+      t        = rotate_right(t);
+      repair_parent_link(t, tmp);
     }
     if (is_red(t->left) && is_red(t->right)) {
       // t->left && t->right
       flip_colors(t);
     }
 
+    return t;
+  }
+
+  /**
+   * @brief Given a node t, return the new root after deleting the minimum node
+   *    in the subtree rooted at t.
+   */
+  Node* delete_min (Node* t) {
+    if (t->left == nullptr) {
+      delete t;
+      return nullptr;
+    }
+
+    if (!is_red(t->left) && !is_red(t->left->left)) {
+      auto tmp = t->parent;
+      t = move_red_left(t);
+      repair_parent_link(t, tmp);
+    }
+
+    t->left = delete_min(t->left);
+    repair_parent_link(t->left, t);
+    return balance(t);
+  }
+
+  /**
+   * @brief
+   * @param t
+   * @return
+   */
+  static Node* move_red_left (Node* t) {
+    flip_colors(t);
+    if (is_red(t->right->left)) {
+      t->right = rotate_right(t->right);
+      repair_parent_link(t->right, t);
+
+      auto tmp = t->parent;
+      t = rotate_left(t);
+      repair_parent_link(t, tmp);
+    }
+    return t;
+  }
+
+  /**
+   * @brief Given a node t, rebalance the subtree rooted at t if necessary.
+   *
+   *    If t has a right leaning child link, left rotate around t.
+   *
+   * @return the new root of the rebalanced subtree
+   * @pre (t!=nullptr)
+   */
+  static Node* balance (Node* t) {
+    assert(t);
+    if (is_red(t->right)) {
+      auto tmp = t->parent;
+      t = rotate_left(t);
+      repair_parent_link(t, tmp);
+    }
     return t;
   }
 
@@ -245,11 +318,14 @@ protected:
    * @brief Given a node t, flip the colors of itself and its two children.
    */
   static void flip_colors (Node* t) {
-    assert(t && t->color == Color::BLACK);
+    auto flip = [] (Color c) -> Color {
+      if (c == Color::BLACK) return Color::RED;
+      else return Color::BLACK;
+    };
 
-    t->color        = Color::RED;
-    t->left->color  = Color::BLACK;
-    t->right->color = Color::BLACK;
+    t->color        = flip(t->color);
+    t->left->color  = flip(t->left->color);
+    t->right->color = flip(t->right->color);
   }
 
   /**

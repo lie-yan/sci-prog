@@ -6,6 +6,12 @@
 #include <iostream>
 #include <vector>
 
+void print_sequence (RBTree* p) {
+  for (auto t = p->successor(nullptr); t != nullptr; t = p->successor(t)) {
+    std::cout << t->key << " ";
+  }
+}
+
 int main () {
 
   auto* p = new RBTree();
@@ -20,7 +26,12 @@ int main () {
   std::cout << p->least()->key << std::endl;
   std::cout << p->greatest()->key << std::endl;
 
-  for (auto t = p->successor(nullptr); t != nullptr; t = p->successor(t)) {
-    std::cout << t->key << " " << t->value << std::endl;
+  print_sequence(p);
+  std::cout << "\n";
+
+  while (!p->is_empty()) {
+    p->delete_min();
+    print_sequence(p);
+    std::cout << "\n";
   }
 }
