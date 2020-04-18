@@ -75,9 +75,9 @@ public:
       if (key < p->key)
         p = p->left;
       else if (p->key < key)
-        std::tie(u, p) = std::pair(p, p->right);
+        u = p, p = p->right;
       else
-        std::tie(u, p) = std::pair(p, nullptr);
+        u = p, p = nullptr;
     }
 
     // Property:
@@ -231,9 +231,8 @@ protected:
 
     auto x = t->right;
     // x != nullptr
-    std::tie(t->right, x->left)  = std::pair(x->left, t);
-    std::tie(x->color, t->color) = std::pair(t->color, Color::RED);
-
+    t->right = x->left, x->left = t;
+    x->color = t->color, t->color  = Color::RED;
     if (t->right) t->right->parent = t;
     t->parent = x;
 
@@ -254,8 +253,8 @@ protected:
 
     auto x = t->left;
     // x != nullptr
-    std::tie(t->left, x->right)  = std::pair(x->right, t);
-    std::tie(x->color, t->color) = std::pair(t->color, Color::RED);
+    t->left = x->right, x->right = t;
+    x->color = t->color, t->color = Color::RED;
 
     if (t->left) t->left->parent = t;
     t->parent = x;
@@ -292,7 +291,7 @@ protected:
     // t != nullptr
     auto[p, q] = std::pair(t, t->left);
     while (q != nullptr) {
-      std::tie(p, q) = std::pair(q, q->left);
+      p = q, q = q->left;
     }
     return p;
   }
@@ -309,7 +308,7 @@ protected:
     // t != nullptr
     auto[p, q] = std::pair(t, t->right);
     while (q != nullptr) {
-      std::tie(p, q) = std::pair(q, q->right);
+      p = q, q = q->right;
     }
     return p;
   }
@@ -331,7 +330,7 @@ protected:
 
     auto[u, v] = std::pair(t, t->parent);
     while (v != nullptr && u == v->left) {
-      std::tie(u, v) = std::pair(v, v->parent);
+      u = v, v = v->parent;
     }
     // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
     return {u, v};
@@ -354,7 +353,7 @@ protected:
 
     auto[u, v] = std::pair(t, t->parent);
     while (v != nullptr && u == v->right) {
-      std::tie(u, v) = std::pair(v, v->parent);
+      u = v, v = v->parent;
     }
     // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
     return {u, v};
