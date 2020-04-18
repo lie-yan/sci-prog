@@ -43,20 +43,9 @@ public:
 
   [[nodiscard]] bool is_empty () const { return !root_; }
 
-  /**
-   * @brief Given a key and a value, insert (key, value) into the search tree.
-   *
-   *    If key already exists in the search tree, replace the value.
-   */
-  void insert (Key key, Value value) {
-    root_ = insert(root_, key, value);
-    root_->parent = nullptr;
-    root_->color  = Color::BLACK;
-  }
+  [[nodiscard]] Node* least () const { return leftmost(root_); }
 
-  void erase (Key key) {
-
-  }
+  [[nodiscard]] Node* greatest () const { return rightmost(root_); }
 
   /**
    * @brief Given a key, return the node corresponding to the greatest key less
@@ -68,7 +57,6 @@ public:
     auto[u, p]= std::pair((Node*)nullptr, root_);
     // Let P be the set of nodes that have been compared with the given key.
     // Let P' be { x ∈ P | x.key ≤ key }.
-    //
     // Invariant:
     //    Q(u): u is the node in P' with the maximum key.
     while (p) {
@@ -143,14 +131,138 @@ public:
     }
   }
 
-  [[nodiscard]] Node* least () const { return leftmost(root_); }
+  /**
+   * @brief Given a key and a value, insert (key, value) into the search tree.
+   *
+   *    If key already exists in the search tree, replace the value.
+   */
+  void insert (Key key, Value value) {
+    root_ = insert(root_, key, value);
+    root_->parent = nullptr;
+    root_->color  = Color::BLACK;
+  }
 
-  [[nodiscard]] Node* greatest () const { return rightmost(root_); }
+  void erase (Key key) {
+
+  }
 
 protected:
+  /**
+   * @brief Given a node t, return whether the link pointing to its parent
+   *  is red.
+   *
+   * @note  is_red(t) ⇒ (t != nullptr)
+   */
+  static bool is_red (Node* t) {
+    if (t == nullptr) return false;
+    else return t->color == Color::RED;
+  }
 
-  static void repair_parent_link (Node* t, Node* parent) {
-    if (t) t->parent = parent;
+  /**
+ * @brief Given a node t, return the leftmost node in the subtree rooted at t.
+ *
+ *  In the case of null node, return null.
+ */
+  static Node* leftmost (Node* t) {
+    if (t == nullptr) return nullptr;
+
+    // t != nullptr
+    auto[p, q] = std::pair(t, t->left);
+    while (q != nullptr) {
+      p = q, q = q->left;
+    }
+    return p;
+  }
+
+  /**
+   * @brief Given a node t, return the rightmost node in the subtree rooted
+   *  at t.
+   *
+   *  In the case of null node, return null.
+   */
+  static Node* rightmost (Node* t) {
+    if (t == nullptr) return nullptr;
+
+    // t != nullptr
+    auto[p, q] = std::pair(t, t->right);
+    while (q != nullptr) {
+      p = q, q = q->right;
+    }
+    return p;
+  }
+
+  /**
+   * @brief Given a node t, return a pair (u, v) such that u is obtained by
+   *  repeatedly following the edge to parent, starting from t, as long as the
+   *  source is a left child.
+   *
+   *  The value of node v is
+   *    1) the parent of u, if u is the right child of its parent;
+   *    2) null, otherwise.
+   *
+   * @pre t != nullptr
+   * @post (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
+   */
+  static std::tuple<Node*, Node*> ascend_rightward (Node* t) {
+    assert(t != nullptr);
+
+    auto[u, v] = std::pair(t, t->parent);
+    while (v != nullptr && u == v->left) {
+      u = v, v = v->parent;
+    }
+    // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
+    return {u, v};
+  }
+
+  /**
+   * @brief Given a node t, return a pair (u, v) such that u is obtained by
+   *  repeatedly following the edge to parent, starting from t, as long as the
+   *  source is a right child.
+   *
+   *  The value of node v is
+   *    1) the parent of u, if u is the left child of its parent;
+   *    2) null, otherwise.
+   *
+   * @pre   t != nullptr
+   * @post  (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
+   */
+  static std::tuple<Node*, Node*> ascend_leftward (Node* t) {
+    assert(t != nullptr);
+
+    auto[u, v] = std::pair(t, t->parent);
+    while (v != nullptr && u == v->right) {
+      u = v, v = v->parent;
+    }
+    // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
+    return {u, v};
+  }
+
+  /**
+   * @brief Repair the parent link of t so that it points to p.
+   */
+  static void repair_parent_link (Node* t, Node* p) {
+    if (t) t->parent = p;
+  }
+
+  /**
+   * @brief Delete the given terminal node.
+   *
+   *  If it is a child of some other node, the child link is reset to null.
+   *
+   * @pre t is a leaf
+   */
+  static void delete_terminal (Node* t) {
+    assert(t && !t->left && !t->right);
+
+    if (!t->parent) {
+      void(); // do nothing
+    } else if (t->parent->left == t) {
+      t->parent->left = nullptr;
+    } else {
+      t->parent->right = nullptr;
+    }
+
+    delete t;
   }
 
   /**
@@ -190,31 +302,6 @@ protected:
     }
 
     return t;
-  }
-
-  static void delete_terminal (Node* t) {
-    assert(t && !t->left && !t->right);
-
-    if (!t->parent) {
-      void(); // do nothing
-    } else if (t->parent->left == t) {
-      t->parent->left = nullptr;
-    } else {
-      t->parent->right = nullptr;
-    }
-
-    delete t;
-  }
-
-  /**
-   * @brief Given a node t, return whether the link pointing to its parent
-   *  is red.
-   *
-   * @note  is_red(t) ⇒ (t != nullptr)
-   */
-  static bool is_red (Node* t) {
-    if (t == nullptr) return false;
-    else return t->color == Color::RED;
   }
 
   /**
@@ -278,85 +365,6 @@ protected:
     t->color        = flip(t->color);
     t->left->color  = flip(t->left->color);
     t->right->color = flip(t->right->color);
-  }
-
-  /**
-   * @brief Given a node t, return the leftmost node in the subtree rooted at t.
-   *
-   *  In the case of null node, return null.
-   */
-  static Node* leftmost (Node* t) {
-    if (t == nullptr) return nullptr;
-
-    // t != nullptr
-    auto[p, q] = std::pair(t, t->left);
-    while (q != nullptr) {
-      p = q, q = q->left;
-    }
-    return p;
-  }
-
-  /**
-   * @brief Given a node t, return the rightmost node in the subtree rooted 
-   *  at t.
-   *
-   *  In the case of null node, return null.
-   */
-  static Node* rightmost (Node* t) {
-    if (t == nullptr) return nullptr;
-
-    // t != nullptr
-    auto[p, q] = std::pair(t, t->right);
-    while (q != nullptr) {
-      p = q, q = q->right;
-    }
-    return p;
-  }
-
-  /**
-   * @brief Given a node t, return a pair (u, v) such that u is obtained by
-   *  repeatedly following the edge to parent, starting from t, as long as the
-   *  source is a left child.
-   *
-   *  The value of node v is
-   *    1) the parent of u, if u is the right child of its parent;
-   *    2) null, otherwise.
-   *
-   * @pre t != nullptr
-   * @post (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
-   */
-  static std::tuple<Node*, Node*> ascend_rightward (Node* t) {
-    assert(t != nullptr);
-
-    auto[u, v] = std::pair(t, t->parent);
-    while (v != nullptr && u == v->left) {
-      u = v, v = v->parent;
-    }
-    // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
-    return {u, v};
-  }
-
-  /**
-   * @brief Given a node t, return a pair (u, v) such that u is obtained by
-   *  repeatedly following the edge to parent, starting from t, as long as the
-   *  source is a right child.
-   *
-   *  The value of node v is
-   *    1) the parent of u, if u is the left child of its parent;
-   *    2) null, otherwise.
-   *
-   * @pre   t != nullptr
-   * @post  (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
-   */
-  static std::tuple<Node*, Node*> ascend_leftward (Node* t) {
-    assert(t != nullptr);
-
-    auto[u, v] = std::pair(t, t->parent);
-    while (v != nullptr && u == v->right) {
-      u = v, v = v->parent;
-    }
-    // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
-    return {u, v};
   }
 
 private:
