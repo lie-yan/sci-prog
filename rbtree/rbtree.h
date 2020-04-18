@@ -12,11 +12,19 @@
  * @brief A red-black tree.
  *
  * @invariant
+ *    Sedgewick invariant:
  *    1) Symmetric order.
  *    2) Red links lean left.
  *    3) No node has two red links connected to it.
  *    4) Perfect black balance: every path from an internal node to a null link
  *       has the same number of black links.
+ *
+ * @invariant
+ *    Tarjan invariant:
+ *    1) If x is any node with a parent, rank(x) ≤ rank(p(x)) ≤ rank(x) + 1.
+ *    2) If x is any node with a grandparent, rank(x) < rank(p(p(x))).
+ *    3) If x is an external node, rank(x) = 0 and rank(p(x)) = 1 if x has
+ *       a parent.
  */
 class RBTree {
 public:
@@ -137,7 +145,7 @@ public:
    *    If key already exists in the search tree, replace the value.
    */
   void insert (Key key, Value value) {
-    root_ = insert(root_, key, value);
+    root_ = tarjan_insert(root_, key, value);
     root_->parent = nullptr;
     root_->color  = Color::BLACK;
   }
@@ -147,6 +155,15 @@ public:
   }
 
 protected:
+  static Node* Parent (Node* x) {
+    if (x) return x->parent;
+    else return nullptr;
+  }
+
+  static Node* Grandparent (Node* x) {
+    return Parent(Parent(x));
+  }
+
   /**
    * @brief Given a node t, return whether the link pointing to its parent
    *  is red.
@@ -156,6 +173,27 @@ protected:
   static bool is_red (Node* t) {
     if (t == nullptr) return false;
     else return t->color == Color::RED;
+  }
+
+  /**
+   * @brief Given a node t and a key, return a pair (p, tp) such that p is the
+   *    node with the given key under the subtree rooted at t, and tp (for
+   *    "trailing pointer") is the parent of t.
+   *
+   *    If no such p is found, return (null, tp0) where tp0 is the last node
+   *    checked.
+   */
+  static std::tuple<Node*, Node*> find (Node* t, const Key& key) {
+    auto[p, tp]= std::pair(t, (Node*)nullptr);
+    while (p) {
+      if (key < p->key)
+        tp = p, p = p->left;
+      else if (p->key < key)
+        tp = p, p = p->right;
+      else
+        break;
+    }
+    return {p, tp};
   }
 
   /**
@@ -266,45 +304,6 @@ protected:
   }
 
   /**
-   * @post The new root is hung under the old parent of t.
-   */
-  static Node* insert (Node* t, Key key, Value value) {
-    if (t == nullptr)
-      return new Node(key, value, Color::RED);
-
-    // t != nullptr
-
-    if (key < t->key) {
-      t->left = insert(t->left, key, value);
-      repair_parent_link(t->left, t);
-    } else if (t->key < key) {
-      t->right = insert(t->right, key, value);
-      repair_parent_link(t->right, t);
-    } else {
-      t->value = value;
-    }
-
-    if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
-      // t->right != nullptr
-      auto tmp = t->parent;
-      t = rotate_left(t);
-      repair_parent_link(t, tmp);
-    }
-    if (is_red(t->left) && is_red(t->left->left)) {
-      // t->left && t->left->left
-      auto tmp = t->parent;
-      t        = rotate_right(t);
-      repair_parent_link(t, tmp);
-    }
-    if (is_red(t->left) && is_red(t->right)) {
-      // t->left && t->right
-      flip_colors(t);
-    }
-
-    return t;
-  }
-
-  /**
    * @brief Given a node t, left rotate around t and return the new root.
    *
    *  The parent links below the new root are well set. The parent link of the
@@ -366,6 +365,124 @@ protected:
     t->left->color  = flip(t->left->color);
     t->right->color = flip(t->right->color);
   }
+
+  /**
+   * @post The new root is hung under the old parent of t.
+   */
+  static Node* sedgewick_insert (Node* t, Key key, Value value) {
+    if (t == nullptr)
+      return new Node(key, value, Color::RED);
+
+    // t != nullptr
+
+    if (key < t->key) {
+      t->left = sedgewick_insert(t->left, key, value);
+      repair_parent_link(t->left, t);
+    } else if (t->key < key) {
+      t->right = sedgewick_insert(t->right, key, value);
+      repair_parent_link(t->right, t);
+    } else {
+      t->value = value;
+    }
+
+    if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
+      // t->right != nullptr
+      auto tmp = t->parent;
+      t = rotate_left(t);
+      repair_parent_link(t, tmp);
+    }
+    if (is_red(t->left) && is_red(t->left->left)) {
+      // t->left && t->left->left
+      auto tmp = t->parent;
+      t        = rotate_right(t);
+      repair_parent_link(t, tmp);
+    }
+    if (is_red(t->left) && is_red(t->right)) {
+      // t->left && t->right
+      flip_colors(t);
+    }
+
+    return t;
+  }
+
+  /**
+   * @post The new root is hung under the old parent of t.
+   */
+  static Node* tarjan_insert (Node* t, Key key, Value value) {
+
+    auto[found, tp] = find(t, key);
+
+    if (!tp) {
+      return new Node(key, value, Color::RED);
+    }
+
+    if (found) {
+      found->value = value;
+      return t;
+    }
+
+    // tp && !p
+
+    auto* x = new Node(key, value, Color::RED);
+    if (key < tp->key) {
+      tp->left = x, x->parent = tp;
+    } else {
+      tp->right = x, x->parent = tp;
+    }
+
+    do {
+      auto* p1 = Parent(x);
+
+      if (!is_red(x) || !is_red(p1)) // conformal to property (ii)
+        break;
+
+      // is_red(x) && is_red(Parent(x))
+      // is_red(Parent(x)) ⇒ Grandparent(x) != nullptr
+
+      auto* p2 = Grandparent(x);
+      assert(p2);
+      auto* p3 = Parent(Grandparent(x));
+
+      if (is_red(p2->left) && is_red(p2->right)) {
+        tarjan_promote(p2);
+        x = p2;
+      } else {
+        bool p3_nil  = (p3 == nullptr);
+        bool p3_left = !p3_nil && (p2 == p3->left);
+        bool p2_left = (p1 == p2->left);
+        bool p1_left = (x == p1->left);
+
+        if (p1_left && p2_left) {
+          p2 = rotate_right(p2);
+        } else if (!p1_left && !p2_left) {
+          p2 = rotate_left(p2);
+        } else if (p1_left && !p2_left) {
+          p2->right         = rotate_right(p2->right);
+          p2->right->parent = p2;
+          p2 = rotate_left(p2);
+        } else {
+          p2->left         = rotate_left(p2->left);
+          p2->left->parent = p2;
+          p2 = rotate_right(p2);
+        }
+
+        if (p3_nil) {
+          t = p2;
+        } else if (p3_left) {
+          p3->left   = p2;
+          p2->parent = p3;
+        } else {
+          p3->right  = p2;
+          p2->parent = p3;
+        }
+        break;
+      }
+    } while (true);
+
+    return t;
+  }
+
+  static void tarjan_promote (Node* t) { flip_colors(t); }
 
 private:
   Node* root_;

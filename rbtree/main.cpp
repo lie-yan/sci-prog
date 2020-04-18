@@ -19,6 +19,9 @@ int main () {
   std::vector<int> v = {5, 7, 9, 1, 3, 11};
   for (auto        x: v) {
     p->insert(x, 0);
+    print_sequence(p);
+    std::cout << "\n";
+
   }
 
   std::cout << p->lower_bound(6)->key << std::endl;
