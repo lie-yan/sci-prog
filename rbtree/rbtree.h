@@ -80,7 +80,7 @@ public:
   using Nodeptr = Node*;
   using Nodepref = Nodeptr&;
 
-  [[nodiscard]] bool is_empty () const { return nullptr == root_; }
+  [[nodiscard]] bool is_empty () const { return Isnil(root_); }
 
   [[nodiscard]] Nodeptr least () const { return leftmost(root_); }
 
@@ -124,11 +124,11 @@ public:
    *       sequence.
    */
   Nodeptr predecessor (Nodeptr t) const {
-    if (t == nullptr) {
+    if (Isnil(t)) {
       return rightmost(root_);
-    } else if (Left(t) != nullptr) { // has left subtree
+    } else if (!Isnil(Left(t))) { // has left subtree
       return rightmost(Left(t));
-    } else if (Parent(t) == nullptr) { // no left subtree ∧ be root
+    } else if (Isnil(Parent(t))) { // no left subtree ∧ be root
       // no left subtree ∧ be root ⇒ initial node
       return nullptr;
     } else if (Right(Parent(t)) == t) { // no left subtree ∧ be right child
@@ -152,11 +152,11 @@ public:
    *       sequence.
    */
   Nodeptr successor (Nodeptr t) const {
-    if (t == nullptr) {
+    if (Isnil(t)) {
       return leftmost(root_);
-    } else if (Right(t) != nullptr) { // has right subtree
+    } else if (!Isnil(Right(t))) { // has right subtree
       return leftmost(Right(t));
-    } else if (Parent(t) == nullptr) { // no right subtree ∧ be root
+    } else if (Isnil(Parent(t))) { // no right subtree ∧ be root
       // no right subtree ∧ be root ⇒ final node
       return nullptr;
     } else if (Left(Parent(t)) == t) { // no right subtree ∧ be left child
@@ -187,6 +187,10 @@ public:
 
 protected:
 
+  static bool Isnil (Nodeptr x) {
+    return x == nullptr;
+  }
+
   static Colorref Color_ (Nodeptr x) {
     return (*x).color;
   }
@@ -204,14 +208,14 @@ protected:
   }
 
   static Nodeptr Grandparent (Nodeptr x) {
-    if (nullptr == x || nullptr == Parent(x) || nullptr == Parent(Parent(x)))
+    if (Isnil(x) || Isnil(Parent(x)) || Isnil(Parent(Parent(x))))
       return nullptr;
     else
       return Parent(Parent(x));
   }
 
   static Nodeptr Sibling (Nodeptr x) {
-    if (nullptr == x || nullptr == Parent(x))
+    if (Isnil(x) || Isnil(Parent(x)))
       return nullptr;
     else if (x == Left(Parent(x)))
       return Right(Parent(x));
@@ -225,7 +229,7 @@ protected:
    * @note  is_red(t) ⇒ (t != nullptr)
    */
   static bool is_red (Nodeptr t) {
-    if (nullptr == t) return false;
+    if (Isnil(t)) return false;
     else return Color_(t) == Color::RED;
   }
 
@@ -257,11 +261,11 @@ protected:
  *  In the case of null node, return null.
  */
   static Nodeptr leftmost (Nodeptr t) {
-    if (t == nullptr) return nullptr;
+    if (Isnil(t)) return nullptr;
 
     // t != nullptr
     auto[tp, p] = std::pair(t, Left(t));
-    while (p != nullptr) {
+    while (!Isnil(p)) {
       tp = p, p = Left(p);
     }
     return tp;
@@ -274,11 +278,11 @@ protected:
    *  In the case of null node, return null.
    */
   static Nodeptr rightmost (Nodeptr t) {
-    if (t == nullptr) return nullptr;
+    if (Isnil(t)) return nullptr;
 
     // t != nullptr
     auto[tp, p] = std::pair(t, Right(t));
-    while (p != nullptr) {
+    while (!Isnil(p)) {
       tp = p, p = Right(p);
     }
     return tp;
@@ -297,10 +301,10 @@ protected:
    * @post (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->right)
    */
   static std::pair<Nodeptr, Nodeptr> ascend_rightward (Nodeptr t) {
-    assert(t != nullptr);
+    assert(!Isnil(t));
 
     auto[u, pu] = std::pair(t, Parent(t));
-    while (pu != nullptr && u == Left(pu)) {
+    while (!Isnil(pu) && u == Left(pu)) {
       u = pu, pu = Parent(pu);
     }
     // (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->right)
@@ -320,10 +324,10 @@ protected:
    * @post  (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->left)
    */
   static std::pair<Nodeptr, Nodeptr> ascend_leftward (Nodeptr t) {
-    assert(t != nullptr);
+    assert(!Isnil(t));
 
     auto[u, pu] = std::pair(t, Parent(t));
-    while (pu != nullptr && u == Right(pu)) {
+    while (!Isnil(pu) && u == Right(pu)) {
       u = pu, pu = Parent(pu);
     }
     // (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->left)
@@ -380,8 +384,8 @@ protected:
    */
   static Nodeptr rotate_left_with_fixup (Nodepref t) {
     Nodeptr p      = Parent(t);
-    bool    p_nil  = (p == nullptr);
-    bool    t_left = !p_nil && Left(p) == t;
+    bool    p_nil  = Isnil(p);
+    bool    t_left = !p_nil && (Left(p) == t);
 
     t = rotate_left(t);
     Parent(t) = p;
@@ -398,8 +402,8 @@ protected:
    */
   static Nodeptr rotate_right_with_fixup (Nodepref t) {
     Nodeptr p      = Parent(t);
-    bool    p_nil  = (p == nullptr);
-    bool    t_left = !p_nil && Left(p) == t;
+    bool    p_nil  = Isnil(p);
+    bool    t_left = !p_nil && (Left(p) == t);
 
     t = rotate_right(t);
     Parent(t) = p;
@@ -482,8 +486,8 @@ protected:
     if (found) { // Case 1)
       found->value = value;
       return t;
-    } else if (nullptr == tp) { // Case 2)
-      assert(nullptr == t);
+    } else if (Isnil(tp)) { // Case 2)
+      assert(Isnil(t));
       return new Node(key, value, Color::RED);
     }
 
@@ -526,7 +530,7 @@ protected:
           rotate_right_with_fixup(p2);
         }
 
-        if (Parent(p2) == nullptr) t = p2;
+        if (Isnil(Parent(p2))) t = p2;
         break;
       }
     }
@@ -537,7 +541,7 @@ protected:
   static Nodeptr tarjan_delete (Nodeptr t, const Key& key) {
     Nodeptr x;
     std::tie(x, std::ignore) = find(t, key);
-    if (nullptr == x) return t;
+    if (Isnil(x)) return t;
 
     // nullptr != x
 
@@ -547,12 +551,12 @@ protected:
 
     scoped_ptr<Node> retired;
 
-    if (nullptr == Left(x) || nullptr == Right(x)) {
+    if (Isnil(Left(x)) || Isnil(Right(x))) {
       std::tie(x, retired) = retire(x);
     } else {
       // x->left != nullptr
       auto* predecessor = rightmost(Left(x));
-      assert(predecessor != nullptr);
+      assert(!Isnil(predecessor));
       // predecessor->right == nullptr
 
       swap_payload(*x, *predecessor);
@@ -561,7 +565,7 @@ protected:
     }
 
     bool retired_black = !is_red(retired.get());
-    bool x_nil         = (nullptr == x);
+    bool x_nil         = Isnil(x);
     bool x_black       = !is_red(x);
     assert(!x_nil || x_black); // x_nil ⇒ x_black
     assert(retired_black || x_black);
