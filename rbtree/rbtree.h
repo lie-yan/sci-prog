@@ -14,12 +14,7 @@
 template <typename T>
 class scoped_ptr : public std::unique_ptr<T> {
 public:
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "google-explicit-constructor"
-
-  scoped_ptr (T* p = 0) : std::unique_ptr<T>(p) { }
-
-#pragma clang diagnostic pop
+  scoped_ptr (T* p = nullptr) : std::unique_ptr<T>(p) { }
 };
 
 /**
@@ -181,20 +176,21 @@ protected:
   }
 
   static Node* Sibling (Node* x) {
-    if (nullptr == x) return nullptr;
-    else if (nullptr == x->parent) return nullptr;
-    else if (x == x->parent->left) return x->parent->right;
-    else return x->parent->left;
+    if (nullptr == x || nullptr == Parent(x))
+      return nullptr;
+    else if (x == x->parent->left)
+      return x->parent->right;
+    else
+      return x->parent->left;
   }
 
   /**
    * @brief Given a node t, return whether the link pointing to its parent
    *  is red.
-   *
    * @note  is_red(t) ⇒ (t != nullptr)
    */
   static bool is_red (Node* t) {
-    if (t == nullptr) return false;
+    if (nullptr == t) return false;
     else return t->color == Color::RED;
   }
 
@@ -206,9 +202,8 @@ protected:
    *    If p is the root, return (p, null).
    *    If no such p is found, return (null, tp0) where tp0 is the last node
    *    checked before return.
-   *
    */
-  static std::tuple<Node*, Node*> find (Node* t, const Key& key) {
+  static std::pair<Node*, Node*> find (Node* t, const Key& key) {
     auto[p, tp]= std::pair(t, (Node*)nullptr);
     while (p) {
       if (key < p->key)
@@ -266,7 +261,7 @@ protected:
    * @pre t != nullptr
    * @post (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
    */
-  static std::tuple<Node*, Node*> ascend_rightward (Node* t) {
+  static std::pair<Node*, Node*> ascend_rightward (Node* t) {
     assert(t != nullptr);
 
     auto[u, v] = std::pair(t, t->parent);
@@ -289,7 +284,7 @@ protected:
    * @pre   t != nullptr
    * @post  (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
    */
-  static std::tuple<Node*, Node*> ascend_leftward (Node* t) {
+  static std::pair<Node*, Node*> ascend_leftward (Node* t) {
     assert(t != nullptr);
 
     auto[u, v] = std::pair(t, t->parent);
@@ -298,13 +293,6 @@ protected:
     }
     // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
     return {u, v};
-  }
-
-  /**
-   * @brief Repair the parent link of t so that it points to p.
-   */
-  static void repair_parent_link (Node* t, Node* p) {
-    if (t) t->parent = p;
   }
 
   /**
@@ -380,11 +368,11 @@ protected:
     // t != nullptr
 
     if (key < t->key) {
-      t->left = sedgewick_insert(t->left, key, value);
-      repair_parent_link(t->left, t);
+      t->left         = sedgewick_insert(t->left, key, value);
+      t->left->parent = t;
     } else if (t->key < key) {
-      t->right = sedgewick_insert(t->right, key, value);
-      repair_parent_link(t->right, t);
+      t->right         = sedgewick_insert(t->right, key, value);
+      t->right->parent = t;
     } else {
       t->value = value;
     }
@@ -393,13 +381,13 @@ protected:
       // t->right != nullptr
       auto tmp = t->parent;
       t = rotate_left(t);
-      repair_parent_link(t, tmp);
+      t->parent = tmp;
     }
     if (is_red(t->left) && is_red(t->left->left)) {
       // t->left && t->left->left
       auto tmp = t->parent;
-      t        = rotate_right(t);
-      repair_parent_link(t, tmp);
+      t = rotate_right(t);
+      t->parent = tmp;
     }
     if (is_red(t->left) && is_red(t->right)) {
       // t->left && t->right
@@ -520,7 +508,7 @@ protected:
       std::tie(x, retired) = retire(x);
     }
 
-    
+
   }
 
   static void tarjan_promote (Node* t) { flip_colors(t); }
@@ -533,6 +521,7 @@ protected:
    * @brief Given a node t, set the pointer fields in t to null.
    */
   static void detach (Node* t) {
+    assert(t != nullptr);
     t->parent = t->left = t->right = nullptr;
   }
 
