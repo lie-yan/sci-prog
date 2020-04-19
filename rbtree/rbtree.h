@@ -8,6 +8,8 @@
 #include <optional>
 #include <iostream>
 
+#define DEBUG 1
+
 /**
  * @brief A red-black tree.
  *
@@ -18,6 +20,7 @@
  *    3) No node has two red links connected to it.
  *    4) Perfect black balance: every path from an internal node to a null link
  *       has the same number of black links.
+ *    Refer to Algorithms by Sedgewick and Wayne.
  *
  * @invariant
  *    Tarjan invariant:
@@ -25,6 +28,7 @@
  *    2) If x is any node with a grandparent, rank(x) < rank(p(p(x))).
  *    3) If x is an external node, rank(x) = 0 and rank(p(x)) = 1 if x has
  *       a parent.
+ *    Refer to Data Structures and Network Algorithms by Tarjan.
  */
 class RBTree {
 public:
@@ -180,8 +184,10 @@ protected:
    *    node with the given key under the subtree rooted at t, and tp (for
    *    "trailing pointer") is the parent of t.
    *
+   *    If p is the root, return (p, null).
    *    If no such p is found, return (null, tp0) where tp0 is the last node
-   *    checked.
+   *    checked before return.
+   *
    */
   static std::tuple<Node*, Node*> find (Node* t, const Key& key) {
     auto[p, tp]= std::pair(t, (Node*)nullptr);
@@ -283,9 +289,7 @@ protected:
   }
 
   /**
-   * @brief Delete the given terminal node.
-   *
-   *  If it is a child of some other node, the child link is reset to null.
+   * @brief Given a node t, detach t from its parent and delete t.
    *
    * @pre t is a leaf
    */
@@ -412,16 +416,20 @@ protected:
 
     auto[found, tp] = find(t, key);
 
-    if (!tp) {
+    // Cases:
+    //  1) found
+    //  2) empty tree
+    //  3) nonempty tree and not found
+
+    if (found) { // Case 1)
+      found->value = value;
+      return t;
+    } else if (!tp) { // Case 2)
+      assert(!t);
       return new Node(key, value, Color::RED);
     }
 
-    if (found) {
-      found->value = value;
-      return t;
-    }
-
-    // tp && !p
+    // Case 3)
 
     auto* x = new Node(key, value, Color::RED);
     if (key < tp->key) {
@@ -430,10 +438,10 @@ protected:
       tp->right = x, x->parent = tp;
     }
 
-    do {
+    while (true) {
       auto* p1 = Parent(x);
 
-      if (!is_red(x) || !is_red(p1)) // conformal to property (ii)
+      if (!is_red(x) || !is_red(p1)) // conformal to Tarjan invariant 2)
         break;
 
       // is_red(x) && is_red(Parent(x))
@@ -448,15 +456,16 @@ protected:
         x = p2;
       } else {
         bool p3_nil  = (p3 == nullptr);
-        bool p3_left = !p3_nil && (p2 == p3->left);
-        bool p2_left = (p1 == p2->left);
-        bool p1_left = (x == p1->left);
+        bool p2_left = !p3_nil && (p2 == p3->left); // p2 is a left child
+        bool p1_left = (p1 == p2->left); // p1 is a left child
+        bool x_left  = (x == p1->left); // x is a left child
 
-        if (p1_left && p2_left) {
+        if (x_left && p1_left) {
           p2 = rotate_right(p2);
-        } else if (!p1_left && !p2_left) {
+        } else if (!x_left && !p1_left) {
           p2 = rotate_left(p2);
-        } else if (p1_left && !p2_left) {
+        } else if (x_left) {
+          assert(!p1_left);
           p2->right         = rotate_right(p2->right);
           p2->right->parent = p2;
           p2 = rotate_left(p2);
@@ -468,7 +477,7 @@ protected:
 
         if (p3_nil) {
           t = p2;
-        } else if (p3_left) {
+        } else if (p2_left) {
           p3->left   = p2;
           p2->parent = p3;
         } else {
@@ -477,7 +486,12 @@ protected:
         }
         break;
       }
-    } while (true);
+    }
+
+    return t;
+  }
+
+  static Node* tarjan_delete (Node* t, const Key& key) {
 
     return t;
   }
@@ -486,5 +500,4 @@ protected:
 
 private:
   Node* root_;
-  int size_;
 };
