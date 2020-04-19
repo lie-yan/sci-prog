@@ -4,14 +4,34 @@
 
 #pragma once
 
+#define DEBUG 1
+
 #include <cstdint>
 #include <optional>
 #include <iostream>
+#include <tuple>
 
-#define DEBUG 1
+template <typename T>
+class scoped_ptr : public std::unique_ptr<T> {
+public:
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "google-explicit-constructor"
+
+  scoped_ptr (T* p = 0) : std::unique_ptr<T>(p) { }
+
+#pragma clang diagnostic pop
+};
 
 /**
  * @brief A red-black tree.
+ *
+ * @invariant
+ *    Tarjan invariant:
+ *    1) If x is any node with a parent, rank(x) ≤ rank(p(x)) ≤ rank(x) + 1.
+ *    2) If x is any node with a grandparent, rank(x) < rank(p(p(x))).
+ *    3) If x is an external node, rank(x) = 0 and rank(p(x)) = 1 if x has
+ *       a parent.
+ *    Refer to Data Structures and Network Algorithms by Tarjan.
  *
  * @invariant
  *    Sedgewick invariant:
@@ -21,14 +41,6 @@
  *    4) Perfect black balance: every path from an internal node to a null link
  *       has the same number of black links.
  *    Refer to Algorithms by Sedgewick and Wayne.
- *
- * @invariant
- *    Tarjan invariant:
- *    1) If x is any node with a parent, rank(x) ≤ rank(p(x)) ≤ rank(x) + 1.
- *    2) If x is any node with a grandparent, rank(x) < rank(p(p(x))).
- *    3) If x is an external node, rank(x) = 0 and rank(p(x)) = 1 if x has
- *       a parent.
- *    Refer to Data Structures and Network Algorithms by Tarjan.
  */
 class RBTree {
 public:
@@ -53,7 +65,7 @@ public:
         : key(key), value(value), color(color) { }
   };
 
-  [[nodiscard]] bool is_empty () const { return !root_; }
+  [[nodiscard]] bool is_empty () const { return nullptr == root_; }
 
   [[nodiscard]] Node* least () const { return leftmost(root_); }
 
@@ -166,6 +178,13 @@ protected:
 
   static Node* Grandparent (Node* x) {
     return Parent(Parent(x));
+  }
+
+  static Node* Sibling (Node* x) {
+    if (nullptr == x) return nullptr;
+    else if (nullptr == x->parent) return nullptr;
+    else if (x == x->parent->left) return x->parent->right;
+    else return x->parent->left;
   }
 
   /**
@@ -289,25 +308,6 @@ protected:
   }
 
   /**
-   * @brief Given a node t, detach t from its parent and delete t.
-   *
-   * @pre t is a leaf
-   */
-  static void delete_terminal (Node* t) {
-    assert(t && !t->left && !t->right);
-
-    if (!t->parent) {
-      void(); // do nothing
-    } else if (t->parent->left == t) {
-      t->parent->left = nullptr;
-    } else {
-      t->parent->right = nullptr;
-    }
-
-    delete t;
-  }
-
-  /**
    * @brief Given a node t, left rotate around t and return the new root.
    *
    *  The parent links below the new root are well set. The parent link of the
@@ -424,8 +424,8 @@ protected:
     if (found) { // Case 1)
       found->value = value;
       return t;
-    } else if (!tp) { // Case 2)
-      assert(!t);
+    } else if (nullptr == tp) { // Case 2)
+      assert(nullptr == t);
       return new Node(key, value, Color::RED);
     }
 
@@ -492,11 +492,71 @@ protected:
   }
 
   static Node* tarjan_delete (Node* t, const Key& key) {
+    Node* x;
+    std::tie(x, std::ignore) = find(t, key);
+    if (nullptr == x) return t;
 
-    return t;
+    // nullptr != x
+
+    // Cases:
+    //    1) x has null child.
+    //    2) Both children of x are not null.
+
+    if (nullptr == x->left || nullptr == x->right) {
+      scoped_ptr<Node> retired;
+      std::tie(x, retired) = retire(x);
+    } else {
+      assert(x->left != nullptr);
+      auto* predecessor = rightmost(x->left);
+      assert(predecessor != nullptr);
+
+      std::swap(x->key, predecessor->key);
+      std::swap(x->value, predecessor->value);
+
+      x = predecessor;
+      assert(nullptr == x->right);
+
+      scoped_ptr<Node> retired;
+      std::tie(x, retired) = retire(x);
+    }
+
+    
   }
 
   static void tarjan_promote (Node* t) { flip_colors(t); }
+
+  static void tarjan_demote (Node* t) {
+
+  }
+
+  /**
+   * @brief Given a node t, set the pointer fields in t to null.
+   */
+  static void detach (Node* t) {
+    t->parent = t->left = t->right = nullptr;
+  }
+
+  /**
+   * @brief Given a node x with exactly one child, replace x with its child and
+   *    return the new x and the old.
+   * @pre x has only one child.
+   */
+  static std::pair<Node*, Node*> retire (Node* x) {
+    assert(x != nullptr);
+    assert(x->left || x->right);
+    assert(!(x->left && x->right));
+
+    auto p = x->parent;
+    auto c = (nullptr == x->left) ? x->right : x->left;
+
+    c->parent = p;
+    if (nullptr == p) void();
+    else if (p->left == x) p->left = c;
+    else p->right = c;
+
+    detach(x);
+    return {c, x};
+  };
 
 private:
   Node* root_;
