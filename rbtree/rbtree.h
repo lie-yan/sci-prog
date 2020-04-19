@@ -324,7 +324,7 @@ protected:
   }
 
   /**
-   * @brief Given a node t, left rotate around t and return the new root.
+   * @brief Given a node t, rotate right link to left and return the new root.
    *
    *  The parent links below the new root are well set. The parent link of the
    *  new root is not.
@@ -345,12 +345,8 @@ protected:
     return x;
   }
 
-  static Node* rotate_left_with_fixup (Node* t) {
-
-  }
-
   /**
-   * @brief Given a node t, right rotate around t and return the new root.
+   * @brief Given a node t, rotate left link to right and return the new root.
    *
    *  The parent links below the new root are well set. The parent link of the
    *  new root is not.
@@ -369,6 +365,42 @@ protected:
     t->parent = x;
 
     return x;
+  }
+
+  /**
+   * @brief Given a node t, rotate right link of t to left, and return the new
+   *   root with the parent link fixed up.
+   */
+  static Nodeptr rotate_left_with_fixup (Nodepref t) {
+    Nodeptr p      = Parent(t);
+    bool    p_nil  = (p == nullptr);
+    bool    t_left = !p_nil && Left(p) == t;
+
+    t = rotate_left(t);
+    Parent(t) = p;
+
+    if (!p_nil && t_left) Left(p) = t;
+    else if (!p_nil) Right(p) = t;
+
+    return t;
+  }
+
+  /**
+   * @brief Given a node t, rotate left link of t to right, and return the new
+   *   root with the parent link fixed up.
+   */
+  static Nodeptr rotate_right_with_fixup (Nodepref t) {
+    Nodeptr p      = Parent(t);
+    bool    p_nil  = (p == nullptr);
+    bool    t_left = !p_nil && Left(p) == t;
+
+    t = rotate_right(t);
+    Parent(t) = p;
+
+    if (!p_nil && t_left) Left(p) = t;
+    else if (!p_nil) Right(p) = t;
+
+    return t;
   }
 
   /**
@@ -459,51 +491,40 @@ protected:
     }
 
     while (true) {
-      auto* p1 = Parent(x);
+      Nodeptr p1 = Parent(x);
 
       if (!is_red(x) || !is_red(p1)) // conformal to Tarjan invariant 2)
         break;
 
       // is_red(x) && is_red(Parent(x))
       // is_red(Parent(x)) ⇒ Grandparent(x) != nullptr
-
-      auto* p2 = Grandparent(x);
+      Nodeptr p2 = Grandparent(x);
       assert(p2);
-      auto* p3 = Parent(Grandparent(x));
 
       if (is_red(p2->left) && is_red(p2->right)) {
         tarjan_promote(p2);
         x = p2;
       } else {
-        bool p3_nil  = (p3 == nullptr);
-        bool p2_left = !p3_nil && (p2 == p3->left); // p2 is a left child
-        bool p1_left = (p1 == p2->left); // p1 is a left child
-        bool x_left  = (x == p1->left); // x is a left child
+        bool p1_left = (p1 == Left(p2)); // p1 is a left child
+        bool x_left  = (x == Left(p1)); // x is a left child
 
         if (x_left && p1_left) { // zag-zag
-          p2 = rotate_right(p2);
+          rotate_right_with_fixup(p2);
         } else if (!x_left && !p1_left) { // zig-zig
-          p2 = rotate_left(p2);
+          rotate_left_with_fixup(p2);
         } else if (x_left) { // zig-zag
-          assert(!p1_left);
+          // !p1_left
           p2->right         = rotate_right(p2->right);
           p2->right->parent = p2;
-          p2 = rotate_left(p2);
+          rotate_left_with_fixup(p2);
         } else { // zag-zig
+          // !x_left && p1_left
           p2->left         = rotate_left(p2->left);
           p2->left->parent = p2;
-          p2 = rotate_right(p2);
+          rotate_right_with_fixup(p2);
         }
 
-        if (p3_nil) {
-          t = p2;
-        } else if (p2_left) {
-          p3->left   = p2;
-          p2->parent = p3;
-        } else {
-          p3->right  = p2;
-          p2->parent = p3;
-        }
+        if (Parent(p2) == nullptr) t = p2;
         break;
       }
     }
@@ -579,34 +600,27 @@ protected:
         x->parent      = rotate_right(x->parent);
       }
     } else { // is_red(y)
-      auto* yp = Parent(y);
-      assert(y && yp && !is_red(y->left) && !is_red(y->right));
-      bool yp_left = (Left(Parent(yp)) == yp);
-      auto* ypp = Grandparent(y);
-
-      yp = y_left ? rotate_right(yp) : rotate_left(yp);
-
-      if (ypp && yp_left) ypp->left = yp, yp->parent = ypp;
-      else if (ypp) ypp->right = yp, yp->parent = ypp;
+      if (y_left) rotate_right_with_fixup(Parent(y));
+      else rotate_left_with_fixup(Parent(y));
     }
   }
 
   static void tarjan_promote (Node* t) {
-    assert(!is_red(t) && is_red(t->left) && is_red(t->right));
+    assert(!is_red(t) && is_red(Left(t)) && is_red(Right(t)));
     flip_colors(t);
   }
 
-  static void tarjan_demote (Node* t) {
-    assert(is_red(t) && !is_red(t->left) && !is_red(t->right));
+  static void tarjan_demote (Nodeptr t) {
+    assert(is_red(t) && !is_red(Left(t)) && !is_red(Right(t)));
     flip_colors(t);
   }
 
   /**
    * @brief Given a node t, set the pointer fields in t to null.
    */
-  static void detach (Node* t) {
-    assert(t != nullptr);
-    t->parent = t->left = t->right = nullptr;
+  static void detach (Nodeptr t) {
+    assert(t);
+    Parent(t) = Left(t) = Right(t) = nullptr;
   }
 
   /**
@@ -624,7 +638,7 @@ protected:
 
     if (p && Left(p) == x)
       Left(p) = c;
-    else if (p) // p->left != x
+    else if (p) // Right(p) == x
       Right(p) = c;
 
     detach(x);
