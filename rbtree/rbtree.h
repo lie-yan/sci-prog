@@ -41,9 +41,6 @@ class RBTree {
 public:
   using Key = int;
   using Value = int;
-  struct Node;
-  using Nodeptr = Node*;
-  using Nodepref = Nodeptr&;
 
   static int key_cmp (const Key& lhs, const Key& rhs) {
     if (lhs < rhs) return -1;
@@ -55,6 +52,8 @@ public:
     BLACK = 0,
     RED,
   };
+
+  using Colorref = Color&;
 
   struct Node {
     Color color;
@@ -78,6 +77,9 @@ public:
     }
   };
 
+  using Nodeptr = Node*;
+  using Nodepref = Nodeptr&;
+
   [[nodiscard]] bool is_empty () const { return nullptr == root_; }
 
   [[nodiscard]] Nodeptr least () const { return leftmost(root_); }
@@ -98,9 +100,9 @@ public:
     //    Q(u): u is the node in P' with the maximum key.
     while (p) {
       if (int cmp = key_cmp(key, p->key); cmp < 0)
-        p = p->left;
+        p = Left(p);
       else if (cmp > 0)
-        u = p, p = p->right;
+        u = p, p = Right(p);
       else
         u = p, p = nullptr;
     }
@@ -124,16 +126,16 @@ public:
   Nodeptr predecessor (Nodeptr t) const {
     if (t == nullptr) {
       return rightmost(root_);
-    } else if (t->left != nullptr) { // has left subtree
-      return rightmost(t->left);
-    } else if (t->parent == nullptr) { // no left subtree ∧ be root
+    } else if (Left(t) != nullptr) { // has left subtree
+      return rightmost(Left(t));
+    } else if (Parent(t) == nullptr) { // no left subtree ∧ be root
       // no left subtree ∧ be root ⇒ initial node
       return nullptr;
-    } else if (t->parent->right == t) { // no left subtree ∧ be right child
-      return t->parent;
+    } else if (Right(Parent(t)) == t) { // no left subtree ∧ be right child
+      return Parent(t);
     } else { // no left subtree ∧ be left child
       // t->parent != nullptr
-      auto[u, v] = ascend_rightward(t->parent);
+      auto[u, v] = ascend_rightward(Parent(t));
       // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
       return v;
     }
@@ -152,17 +154,17 @@ public:
   Nodeptr successor (Nodeptr t) const {
     if (t == nullptr) {
       return leftmost(root_);
-    } else if (t->right != nullptr) { // has right subtree
-      return leftmost(t->right);
-    } else if (t->parent == nullptr) { // no right subtree ∧ be root
+    } else if (Right(t) != nullptr) { // has right subtree
+      return leftmost(Right(t));
+    } else if (Parent(t) == nullptr) { // no right subtree ∧ be root
       // no right subtree ∧ be root ⇒ final node
       return nullptr;
-    } else if (t->parent->left == t) { // no right subtree ∧ be left child
-      return t->parent;
+    } else if (Left(Parent(t)) == t) { // no right subtree ∧ be left child
+      return Parent(t);
     } else { // no right subtree ∧ be right child
 
       // t->parent != nullptr
-      auto[u, v] = ascend_leftward(t->parent);
+      auto[u, v] = ascend_leftward(Parent(t));
       // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
       return v;
     }
@@ -184,6 +186,11 @@ public:
   }
 
 protected:
+
+  static Colorref Color_ (Nodeptr x) {
+    return (*x).color;
+  }
+
   static Nodepref Parent (Nodeptr x) {
     return (*x).parent;
   }
@@ -217,9 +224,9 @@ protected:
    *  is red.
    * @note  is_red(t) ⇒ (t != nullptr)
    */
-  static bool is_red (Node* t) {
+  static bool is_red (Nodeptr t) {
     if (nullptr == t) return false;
-    else return t->color == Color::RED;
+    else return Color_(t) == Color::RED;
   }
 
   /**
@@ -231,13 +238,13 @@ protected:
    *    If no such p is found, return (null, tp0) where tp0 is the last node
    *    checked before return.
    */
-  static std::pair<Node*, Node*> find (Node* t, const Key& key) {
-    auto[p, tp]= std::pair(t, (Node*)nullptr);
+  static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const Key& key) {
+    auto[p, tp]= std::pair(t, (Nodeptr)nullptr);
     while (p) {
       if (int cmp = key_cmp(key, p->key); cmp < 0)
-        tp = p, p = p->left;
+        tp = p, p = Left(p);
       else if (cmp > 0)
-        tp = p, p = p->right;
+        tp = p, p = Right(p);
       else
         break;
     }
@@ -249,15 +256,15 @@ protected:
  *
  *  In the case of null node, return null.
  */
-  static Node* leftmost (Node* t) {
+  static Nodeptr leftmost (Nodeptr t) {
     if (t == nullptr) return nullptr;
 
     // t != nullptr
-    auto[p, q] = std::pair(t, t->left);
-    while (q != nullptr) {
-      p = q, q = q->left;
+    auto[tp, p] = std::pair(t, Left(t));
+    while (p != nullptr) {
+      tp = p, p = Left(p);
     }
-    return p;
+    return tp;
   }
 
   /**
@@ -266,61 +273,61 @@ protected:
    *
    *  In the case of null node, return null.
    */
-  static Node* rightmost (Node* t) {
+  static Nodeptr rightmost (Nodeptr t) {
     if (t == nullptr) return nullptr;
 
     // t != nullptr
-    auto[p, q] = std::pair(t, t->right);
-    while (q != nullptr) {
-      p = q, q = q->right;
+    auto[tp, p] = std::pair(t, Right(t));
+    while (p != nullptr) {
+      tp = p, p = Right(p);
     }
-    return p;
+    return tp;
   }
 
   /**
-   * @brief Given a node t, return a pair (u, v) such that u is obtained by
+   * @brief Given a node t, return a pair (u, pu) such that u is obtained by
    *  repeatedly following the edge to parent, starting from t, as long as the
    *  source is a left child.
    *
-   *  The value of node v is
+   *  The value of node pu is
    *    1) the parent of u, if u is the right child of its parent;
    *    2) null, otherwise.
    *
    * @pre t != nullptr
-   * @post (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
+   * @post (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->right)
    */
-  static std::pair<Node*, Node*> ascend_rightward (Node* t) {
+  static std::pair<Nodeptr, Nodeptr> ascend_rightward (Nodeptr t) {
     assert(t != nullptr);
 
-    auto[u, v] = std::pair(t, t->parent);
-    while (v != nullptr && u == v->left) {
-      u = v, v = v->parent;
+    auto[u, pu] = std::pair(t, Parent(t));
+    while (pu != nullptr && u == Left(pu)) {
+      u = pu, pu = Parent(pu);
     }
-    // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
-    return {u, v};
+    // (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->right)
+    return {u, pu};
   }
 
   /**
-   * @brief Given a node t, return a pair (u, v) such that u is obtained by
+   * @brief Given a node t, return a pair (u, pu) such that u is obtained by
    *  repeatedly following the edge to parent, starting from t, as long as the
    *  source is a right child.
    *
-   *  The value of node v is
+   *  The value of node pu is
    *    1) the parent of u, if u is the left child of its parent;
    *    2) null, otherwise.
    *
    * @pre   t != nullptr
-   * @post  (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
+   * @post  (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->left)
    */
-  static std::pair<Node*, Node*> ascend_leftward (Node* t) {
+  static std::pair<Nodeptr, Nodeptr> ascend_leftward (Nodeptr t) {
     assert(t != nullptr);
 
-    auto[u, v] = std::pair(t, t->parent);
-    while (v != nullptr && u == v->right) {
-      u = v, v = v->parent;
+    auto[u, pu] = std::pair(t, Parent(t));
+    while (pu != nullptr && u == Right(pu)) {
+      u = pu, pu = Parent(pu);
     }
-    // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
-    return {u, v};
+    // (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->left)
+    return {u, pu};
   }
 
   /**
@@ -332,15 +339,15 @@ protected:
    * @pre t && t->right
    * @invariant rotate_left() preserves invariant 1) and 4).
    */
-  static Node* rotate_left (Node* t) {
-    assert(t && t->right);
+  static Nodeptr rotate_left (Nodeptr t) {
+    assert(t && Right(t));
 
-    auto x = t->right;
+    auto x = Right(t);
     // x != nullptr
-    t->right = x->left, x->left = t;
-    std::swap(x->color, t->color);
-    if (t->right) t->right->parent = t;
-    t->parent = x;
+    Right(t) = Left(x), Left(x) = t;
+    std::swap(Color_(x), Color_(t));
+    if (Right(t)) Parent(Right(t)) = t;
+    Parent(t) = x;
 
     return x;
   }
@@ -354,15 +361,15 @@ protected:
    * @pre t && t->left
    * @invariant rotate_right() preserves invariant 1) and 4).
    */
-  static Node* rotate_right (Node* t) {
-    assert(t && t->left);
+  static Nodeptr rotate_right (Nodeptr t) {
+    assert(t && Left(t));
 
-    auto x = t->left;
+    auto x = Left(t);
     // x != nullptr
-    t->left = x->right, x->right = t;
-    std::swap(x->color, t->color);
-    if (t->left) t->left->parent = t;
-    t->parent = x;
+    Left(t) = Right(x), Right(x) = t;
+    std::swap(Color_(x), Color_(t));
+    if (Left(t)) Parent(Left(t)) = t;
+    Parent(t) = x;
 
     return x;
   }
@@ -406,7 +413,7 @@ protected:
   /**
    * @brief Given a node t, flip the colors of itself and its two children.
    */
-  static void flip_colors (Node* t) {
+  static void flip_colors (Nodeptr t) {
     auto flip = [] (Color c) -> Color {
       switch (c) {
       case Color::BLACK:
@@ -416,15 +423,15 @@ protected:
       }
     };
 
-    t->color        = flip(t->color);
-    t->left->color  = flip(t->left->color);
-    t->right->color = flip(t->right->color);
+    Color_(t)        = flip(Color_(t));
+    Color_(Left(t))  = flip(Color_(Left(t)));
+    Color_(Right(t)) = flip(Color_(Right(t)));
   }
 
   /**
    * @post The new root is hung under the old parent of t.
    */
-  static Node* sedgewick_insert (Node* t, Key key, Value value) {
+  static Nodeptr sedgewick_insert (Nodeptr t, Key key, Value value) {
     if (t == nullptr)
       return new Node(key, value, Color::RED);
 
@@ -463,7 +470,7 @@ protected:
   /**
    * @post The new root is hung under the old parent of t.
    */
-  static Node* tarjan_insert (Node* t, Key key, Value value) {
+  static Nodeptr tarjan_insert (Nodeptr t, Key key, Value value) {
 
     auto[found, tp] = find(t, key);
 
@@ -482,7 +489,7 @@ protected:
 
     // Case 3)
 
-    auto* x = new Node(key, value, Color::RED);
+    auto x = new Node(key, value, Color::RED);
     attach(x, tp);
 
     while (true) {
@@ -496,7 +503,7 @@ protected:
       Nodeptr p2 = Grandparent(x);
       assert(p2);
 
-      if (is_red(p2->left) && is_red(p2->right)) {
+      if (is_red(Left(p2)) && is_red(Right(p2))) {
         tarjan_promote(p2);
         x = p2;
       } else {
@@ -509,13 +516,13 @@ protected:
           rotate_left_with_fixup(p2);
         } else if (x_left) { // zig-zag
           // !p1_left
-          p2->right         = rotate_right(p2->right);
-          p2->right->parent = p2;
+          Right(p2)         = rotate_right(Right(p2));
+          Parent(Right(p2)) = p2;
           rotate_left_with_fixup(p2);
         } else { // zag-zig
           // !x_left && p1_left
-          p2->left         = rotate_left(p2->left);
-          p2->left->parent = p2;
+          Left(p2)         = rotate_left(Left(p2));
+          Parent(Left(p2)) = p2;
           rotate_right_with_fixup(p2);
         }
 
@@ -527,8 +534,8 @@ protected:
     return t;
   }
 
-  static Node* tarjan_delete (Node* t, const Key& key) {
-    Node* x;
+  static Nodeptr tarjan_delete (Nodeptr t, const Key& key) {
+    Nodeptr x;
     std::tie(x, std::ignore) = find(t, key);
     if (nullptr == x) return t;
 
@@ -565,9 +572,9 @@ protected:
     }
 
     // retired_black && x_black, violating property 1)
-    bool x_left = (Left(Parent(x)) == x);
-    bool y_left = !x_left;
-    if (Node* y = Sibling(x); !is_red(y)) {
+    bool        x_left = (Left(Parent(x)) == x);
+    bool        y_left = !x_left;
+    if (Nodeptr y      = Sibling(x); !is_red(y)) {
       if (!y) {
         tarjan_demote(x->parent);
         x = x->parent;
@@ -600,7 +607,7 @@ protected:
     }
   }
 
-  static void tarjan_promote (Node* t) {
+  static void tarjan_promote (Nodeptr t) {
     assert(t && !is_red(t) && is_red(Left(t)) && is_red(Right(t)));
     flip_colors(t);
   }
@@ -623,9 +630,9 @@ protected:
    */
   static void attach (Nodeptr x, Nodeptr p) {
     if (int cmp = key_cmp(x->key, p->key); cmp < 0) {
-      p->left = x, x->parent = p;
+      Left(p) = x, Parent(x) = p;
     } else {
-      p->right = x, x->parent = p;
+      Right(p) = x, Parent(x) = p;
     }
   }
 
@@ -638,7 +645,7 @@ protected:
     assert(x && (Left(x) || Right(x)));
 
     auto p = Parent(x);
-    auto c = (nullptr == Left(x)) ? Right(x) : Left(x);
+    auto c = Left(x) ? Left(x) : Right(x);
 
     if (c) Parent(c) = p;
 
@@ -652,5 +659,5 @@ protected:
   };
 
 private:
-  Node* root_;
+  Nodeptr root_;
 };
