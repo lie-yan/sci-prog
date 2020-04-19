@@ -41,6 +41,15 @@ class RBTree {
 public:
   using Key = int;
   using Value = int;
+  struct Node;
+  using Nodeptr = Node*;
+  using Nodepref = Nodeptr&;
+
+  static int key_cmp (const Key& lhs, const Key& rhs) {
+    if (lhs < rhs) return -1;
+    else if (rhs < lhs) return 1;
+    else return 0;
+  }
 
   enum class Color : uint8_t {
     BLACK = 0,
@@ -58,13 +67,22 @@ public:
 
     Node (Key key, Value value, Color color)
         : key(key), value(value), color(color) { }
+
+    void swap_payload (Node& other) {
+      std::swap(key, other.key);
+      std::swap(value, other.value);
+    }
+
+    friend void swap_payload (Node& lhs, Node& rhs) {
+      lhs.swap_payload(rhs);
+    }
   };
 
   [[nodiscard]] bool is_empty () const { return nullptr == root_; }
 
-  [[nodiscard]] Node* least () const { return leftmost(root_); }
+  [[nodiscard]] Nodeptr least () const { return leftmost(root_); }
 
-  [[nodiscard]] Node* greatest () const { return rightmost(root_); }
+  [[nodiscard]] Nodeptr greatest () const { return rightmost(root_); }
 
   /**
    * @brief Given a key, return the node corresponding to the greatest key less
@@ -72,16 +90,16 @@ public:
    *
    *    If no such node exists, return null.
    */
-  [[nodiscard]] Node* lower_bound (const Key& key) const {
-    auto[u, p]= std::pair((Node*)nullptr, root_);
+  [[nodiscard]] Nodeptr lower_bound (const Key& key) const {
+    auto[u, p]= std::pair((Nodeptr)nullptr, root_);
     // Let P be the set of nodes that have been compared with the given key.
     // Let P' be { x ∈ P | x.key ≤ key }.
     // Invariant:
     //    Q(u): u is the node in P' with the maximum key.
     while (p) {
-      if (key < p->key)
+      if (int cmp = key_cmp(key, p->key); cmp < 0)
         p = p->left;
-      else if (p->key < key)
+      else if (cmp > 0)
         u = p, p = p->right;
       else
         u = p, p = nullptr;
@@ -103,7 +121,7 @@ public:
    *    3) In the case of null node, return the final node of the represented
    *       sequence.
    */
-  Node* predecessor (Node* t) const {
+  Nodeptr predecessor (Nodeptr t) const {
     if (t == nullptr) {
       return rightmost(root_);
     } else if (t->left != nullptr) { // has left subtree
@@ -131,7 +149,7 @@ public:
    *    3) In the case of null node, return the initial node of the represented
    *       sequence.
    */
-  Node* successor (Node* t) const {
+  Nodeptr successor (Nodeptr t) const {
     if (t == nullptr) {
       return leftmost(root_);
     } else if (t->right != nullptr) { // has right subtree
@@ -166,22 +184,32 @@ public:
   }
 
 protected:
-  static Node* Parent (Node* x) {
-    if (x) return x->parent;
-    else return nullptr;
+  static Nodepref Parent (Nodeptr x) {
+    return (*x).parent;
   }
 
-  static Node* Grandparent (Node* x) {
-    return Parent(Parent(x));
+  static Nodepref Left (Nodeptr x) {
+    return (*x).left;
   }
 
-  static Node* Sibling (Node* x) {
+  static Nodepref Right (Nodeptr x) {
+    return (*x).right;
+  }
+
+  static Nodeptr Grandparent (Nodeptr x) {
+    if (nullptr == x || nullptr == Parent(x) || nullptr == Parent(Parent(x)))
+      return nullptr;
+    else
+      return Parent(Parent(x));
+  }
+
+  static Nodeptr Sibling (Nodeptr x) {
     if (nullptr == x || nullptr == Parent(x))
       return nullptr;
-    else if (x == x->parent->left)
-      return x->parent->right;
+    else if (x == Left(Parent(x)))
+      return Right(Parent(x));
     else
-      return x->parent->left;
+      return Left(Parent(x));
   }
 
   /**
@@ -206,9 +234,9 @@ protected:
   static std::pair<Node*, Node*> find (Node* t, const Key& key) {
     auto[p, tp]= std::pair(t, (Node*)nullptr);
     while (p) {
-      if (key < p->key)
+      if (int cmp = key_cmp(key, p->key); cmp < 0)
         tp = p, p = p->left;
-      else if (p->key < key)
+      else if (cmp > 0)
         tp = p, p = p->right;
       else
         break;
@@ -310,11 +338,15 @@ protected:
     auto x = t->right;
     // x != nullptr
     t->right = x->left, x->left = t;
-    x->color = t->color, t->color  = Color::RED;
+    std::swap(x->color, t->color);
     if (t->right) t->right->parent = t;
     t->parent = x;
 
     return x;
+  }
+
+  static Node* rotate_left_with_fixup (Node* t) {
+
   }
 
   /**
@@ -332,8 +364,7 @@ protected:
     auto x = t->left;
     // x != nullptr
     t->left = x->right, x->right = t;
-    x->color = t->color, t->color = Color::RED;
-
+    std::swap(x->color, t->color);
     if (t->left) t->left->parent = t;
     t->parent = x;
 
@@ -367,10 +398,10 @@ protected:
 
     // t != nullptr
 
-    if (key < t->key) {
+    if (int cmp = key_cmp(key, t->key); cmp < 0) {
       t->left         = sedgewick_insert(t->left, key, value);
       t->left->parent = t;
-    } else if (t->key < key) {
+    } else if (cmp > 0) {
       t->right         = sedgewick_insert(t->right, key, value);
       t->right->parent = t;
     } else {
@@ -420,7 +451,8 @@ protected:
     // Case 3)
 
     auto* x = new Node(key, value, Color::RED);
-    if (key < tp->key) {
+    // attach x under tp
+    if (int cmp = key_cmp(key, tp->key); cmp < 0) {
       tp->left = x, x->parent = tp;
     } else {
       tp->right = x, x->parent = tp;
@@ -448,16 +480,16 @@ protected:
         bool p1_left = (p1 == p2->left); // p1 is a left child
         bool x_left  = (x == p1->left); // x is a left child
 
-        if (x_left && p1_left) {
+        if (x_left && p1_left) { // zag-zag
           p2 = rotate_right(p2);
-        } else if (!x_left && !p1_left) {
+        } else if (!x_left && !p1_left) { // zig-zig
           p2 = rotate_left(p2);
-        } else if (x_left) {
+        } else if (x_left) { // zig-zag
           assert(!p1_left);
           p2->right         = rotate_right(p2->right);
           p2->right->parent = p2;
           p2 = rotate_left(p2);
-        } else {
+        } else { // zag-zig
           p2->left         = rotate_left(p2->left);
           p2->left->parent = p2;
           p2 = rotate_right(p2);
@@ -490,31 +522,83 @@ protected:
     //    1) x has null child.
     //    2) Both children of x are not null.
 
-    if (nullptr == x->left || nullptr == x->right) {
-      scoped_ptr<Node> retired;
+    scoped_ptr<Node> retired;
+
+    if (nullptr == Left(x) || nullptr == Right(x)) {
       std::tie(x, retired) = retire(x);
     } else {
-      assert(x->left != nullptr);
-      auto* predecessor = rightmost(x->left);
+      // x->left != nullptr
+      auto* predecessor = rightmost(Left(x));
       assert(predecessor != nullptr);
+      // predecessor->right == nullptr
 
-      std::swap(x->key, predecessor->key);
-      std::swap(x->value, predecessor->value);
-
+      swap_payload(*x, *predecessor);
       x = predecessor;
-      assert(nullptr == x->right);
-
-      scoped_ptr<Node> retired;
       std::tie(x, retired) = retire(x);
     }
 
+    bool retired_black = !is_red(retired.get());
+    bool x_nil         = (nullptr == x);
+    bool x_black       = !is_red(x);
+    assert(!x_nil || x_black); // x_nil ⇒ x_black
+    assert(retired_black || x_black);
 
+    if (!retired_black || !x_black) {
+      x->color = Color::BLACK;
+      return (retired.get() == t) ? x : t;
+    }
+
+    // retired_black && x_black, violating property 1)
+    bool x_left = (Left(Parent(x)) == x);
+    bool y_left = !x_left;
+    if (Node* y = Sibling(x); !is_red(y)) {
+      if (!y) {
+        tarjan_demote(x->parent);
+        x = x->parent;
+        // TODO: test violation of (i)
+      } else if (bool yl_red = is_red(y->left), yr_red = is_red(y->right);
+          !yl_red && !yr_red) {
+        tarjan_demote(x->parent);
+        x = x->parent;
+        // TODO: test violation of (i)
+      } else if (x_left && yr_red) { // Case 1.1b
+        y = rotate_left(Parent(x));
+        y->right->color = Color::BLACK;
+      } else if (!x_left && yl_red) { // Case 1.1b
+        y = rotate_right(Parent(x));
+        y->left->color = Color::BLACK;
+      } else if (x_left) { // Case 1.1c
+        // yl_red
+        y = rotate_right(y);
+        y->right->color = Color::BLACK;
+        x->parent       = rotate_left(Parent(x));
+      } else { // Case 1.1c
+        // yr_red
+        y = rotate_left(y);
+        y->left->color = Color::BLACK;
+        x->parent      = rotate_right(x->parent);
+      }
+    } else { // is_red(y)
+      auto* yp = Parent(y);
+      assert(y && yp && !is_red(y->left) && !is_red(y->right));
+      bool yp_left = (Left(Parent(yp)) == yp);
+      auto* ypp = Grandparent(y);
+
+      yp = y_left ? rotate_right(yp) : rotate_left(yp);
+
+      if (ypp && yp_left) ypp->left = yp, yp->parent = ypp;
+      else if (ypp) ypp->right = yp, yp->parent = ypp;
+    }
   }
 
-  static void tarjan_promote (Node* t) { flip_colors(t); }
+  static void tarjan_promote (Node* t) {
+    assert(!is_red(t) && is_red(t->left) && is_red(t->right));
+    flip_colors(t);
+  }
 
   static void tarjan_demote (Node* t) {
-
+    assert(is_red(t) && !is_red(t->left) && !is_red(t->right));
+    flip_colors(t);
   }
 
   /**
@@ -526,22 +610,22 @@ protected:
   }
 
   /**
-   * @brief Given a node x with exactly one child, replace x with its child and
+   * @brief Given a node x with at most one child, replace x with its child and
    *    return the new x and the old.
-   * @pre x has only one child.
+   * @pre x has at most one child.
    */
-  static std::pair<Node*, Node*> retire (Node* x) {
-    assert(x != nullptr);
-    assert(x->left || x->right);
-    assert(!(x->left && x->right));
+  static std::pair<Nodeptr, Nodeptr> retire (Nodeptr x) {
+    assert(x && (Left(x) || Right(x)));
 
-    auto p = x->parent;
-    auto c = (nullptr == x->left) ? x->right : x->left;
+    auto p = Parent(x);
+    auto c = (nullptr == Left(x)) ? Right(x) : Left(x);
 
-    c->parent = p;
-    if (nullptr == p) void();
-    else if (p->left == x) p->left = c;
-    else p->right = c;
+    if (c) Parent(c) = p;
+
+    if (p && Left(p) == x)
+      Left(p) = c;
+    else if (p) // p->left != x
+      Right(p) = c;
 
     detach(x);
     return {c, x};

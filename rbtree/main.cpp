@@ -18,7 +18,7 @@ int main () {
 
   std::vector<int> v = {5, 7, 9, 1, 3, 11};
 
-  for (auto        x: v) {
+  for (auto x: v) {
 //  int count = 20;
 //  for  (int i = 0; i < count; i++) {
 //    int x = std::rand() % count;
@@ -27,7 +27,6 @@ int main () {
     print_sequence(p);
     std::cout << "\n";
   }
-
 
   std::cout << p->lower_bound(6)->key << std::endl;
   std::cout << p->lower_bound(7)->key << std::endl;
