@@ -483,12 +483,7 @@ protected:
     // Case 3)
 
     auto* x = new Node(key, value, Color::RED);
-    // attach x under tp
-    if (int cmp = key_cmp(key, tp->key); cmp < 0) {
-      tp->left = x, x->parent = tp;
-    } else {
-      tp->right = x, x->parent = tp;
-    }
+    attach(x, tp);
 
     while (true) {
       Nodeptr p1 = Parent(x);
@@ -606,7 +601,7 @@ protected:
   }
 
   static void tarjan_promote (Node* t) {
-    assert(!is_red(t) && is_red(Left(t)) && is_red(Right(t)));
+    assert(t && !is_red(t) && is_red(Left(t)) && is_red(Right(t)));
     flip_colors(t);
   }
 
@@ -621,6 +616,17 @@ protected:
   static void detach (Nodeptr t) {
     assert(t);
     Parent(t) = Left(t) = Right(t) = nullptr;
+  }
+
+  /**
+   * @brief Given node x, node p, attach x under p.
+   */
+  static void attach (Nodeptr x, Nodeptr p) {
+    if (int cmp = key_cmp(x->key, p->key); cmp < 0) {
+      p->left = x, x->parent = p;
+    } else {
+      p->right = x, x->parent = p;
+    }
   }
 
   /**
