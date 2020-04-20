@@ -542,87 +542,96 @@ protected:
   }
 
   static Nodeptr tarjan_delete (Nodeptr t, const Key& key) {
-    Nodeptr x;
-    std::tie(x, std::ignore) = find(t, key);
+    auto[x, px] = find(t, key);
+    // Invariant:
+    //    Isnil(x)  ⇒ Isnil(px)
+    //    !Isnil(x) ⇒ (px == Parent(x))
+
     if (Isnil(x)) return t;
 
     // !Isnil(x)
 
     // Cases:
-    //    1) x has null child.
+    //    1) Node x has null child.
     //    2) Both children of x are not null.
 
-    scoped_ptr<Node> retired;
-
+    scoped_ptr<Node> excised;
     if (Isnil(Left(x)) || Isnil(Right(x))) {
-      std::tie(x, retired) = retire(x);
-    } else {
-      // !Isnil(Left(x))
-      auto* predecessor = rightmost(Left(x));
-      assert(!Isnil(predecessor));
-      // Isnil(Right(predecessor))
-
-      swap_payload(*x, *predecessor);
-      x = predecessor;
-      std::tie(x, retired) = retire(x);
+      std::tie(x, px, excised) = excise(x);
+    } else { // !Isnil(Left(x)) && !Isnil(Right(x))
+      auto* pre = rightmost(Left(x));
+      // !Isnil(pre) && Isnil(Right(pre))
+      swap_payload(*x, *pre);
+      std::tie(x, px, excised) = excise(pre);
     }
 
-    bool retired_black = !IsRed(retired.get());
-    bool x_nil         = Isnil(x);
-    bool x_black       = !IsRed(x);
-    assert(retired_black || x_black);
-
-    if (!retired_black || !x_black) { // conformal to i)
-      Color_(x) = Color::BLACK;
-      return (retired.get() == t) ? x : t;
+    if (IsRed(excised.get())) {
+      if (!Isnil(x)) Color_(x) = Color::BLACK;
+      return Isnil(px) ? x : t;
     }
 
-    // retired_black && x_black, violating property 1)
-    bool x_left = (Left(Parent(x)) == x);
-    bool y_left = !x_left;
+    while (true) {
+      if (Isnil(px)) return x;
+      // !Isnil(px) && !Isnil(x)
 
-    if (Nodeptr y = Sibling(x); !IsRed(y)) {
-      assert(y);
+      if (IsRed(x)) { // conformal to property 1)
+        Color_(x) = Color::BLACK;
+        return Isnil(px) ? x : t;
+      }
 
-      if (bool yl_red = IsRed(Left(y)), yr_red = IsRed(Right(y));
-          !yl_red && !yr_red) {
+      // violating property 1)
+
+      Nodeptr y = Sibling(x);
+      // !Isnil(x) && !Isnil(px) ⇒ !Isnil(Sibling(x))
+      // !Isnil(y)
+
+      if (IsRed(y)) {
+        if (IsLeft(y)) rotate_right_with_fixup(Parent(y));
+        else rotate_left_with_fixup(Parent(y));
+      } else if (!IsRed(Left(y)) && !IsRed(Right(y))) {
 
         // Demote Parent(x).
-        // The color of x is kept as BLACK.
-        {
-          Color_(y)         = flip(Color_(y));
-          Color_(Parent(x)) = flip(Color_(Parent(x)));
-        }
+        // Don't flip Color_(x).
+        Color_(y)  = flip(Color_(y));
+        Color_(px) = flip(Color_(px));
 
-        x = Parent(x);
-        // TODO: test violation of (i)
-        // IsRed(x) => conformal to 1), set Color_(x) to black
-        // !IsRed(x) => violation of 1), demote and check again
-      } else if (x_left && yr_red) { // Case 1.1b
-        y = rotate_left_with_fixup(Parent(x));
-        assert(IsRed(Right(y)));
-        Color_(Right(y)) = Color::BLACK;
-      } else if (!x_left && yl_red) { // Case 1.1b
-        y = rotate_right_with_fixup(Parent(x));
-        assert(IsRed(Left(y)));
-        Color_(Left(y)) = Color::BLACK;
-      } else if (x_left) { // Case 1.1c
-        // yl_red
-        y = Right(Parent(x)) = rotate_right(Right(Parent(x)));
-        y = rotate_left_with_fixup(Parent(x));
-        assert(IsRed(Right(y)));
-        Color_(Right(y)) = Color::BLACK;
-      } else { // Case 1.1c
-        // yr_red
-        y = Left(Parent(x)) = rotate_left(Left(Parent(x)));
-        y = rotate_right_with_fixup(Parent(x));
-        assert(IsRed(Left(y)));
-        Color_(Left(y)) = Color::BLACK;
+        x  = Parent(x);
+        px = Isnil(x) ? nullptr : Parent(x);
+
+      } else if (IsLeft(x)) {
+        if (IsRed(Right(y))) {
+          // Case 1.1b
+          y = rotate_left_with_fixup(px);
+          assert(IsRed(Right(y)));
+          Color_(Right(y)) = Color::BLACK;
+          break;
+        } else {
+          // Case 1.1c
+          Right(px) = rotate_right(Right(px));
+          y = rotate_left_with_fixup(px);
+          assert(IsRed(Right(y)));
+          Color_(Right(y)) = Color::BLACK;
+          break;
+        }
+      } else {
+        if (IsRed(Left(y))) {
+          // Case 1.1b
+          y = rotate_right_with_fixup(px);
+          assert(IsRed(Left(y)));
+          Color_(Left(y)) = Color::BLACK;
+          break;
+        } else {
+          // Case 1.1c
+          Left(px) = rotate_left(Left(px));
+          y = rotate_right_with_fixup(px);
+          assert(IsRed(Left(y)));
+          Color_(Left(y)) = Color::BLACK;
+          break;
+        }
       }
-    } else { // IsRed(y)
-      if (y_left) rotate_right_with_fixup(Parent(y));
-      else rotate_left_with_fixup(Parent(y));
     }
+
+    return Isnil(px) ? x : t;
   }
 
   static void tarjan_promote (Nodeptr t) {
@@ -651,24 +660,23 @@ protected:
 
   /**
    * @brief Given a node x with at most one child, replace x with its child and
-   *    return the new x and the old.
+   *    return the new x, the parent, and the old x.
    * @pre x has at most one child.
    */
-  static std::pair<Nodeptr, Nodeptr> retire (Nodeptr x) {
-    assert(x && (Left(x) || Right(x)));
+  static std::tuple<Nodeptr, Nodeptr, Nodeptr> excise (Nodeptr x) {
+    assert(!Isnil(x));
 
-    auto p = Parent(x);
-    auto c = Left(x) ? Left(x) : Right(x);
+    auto px = Parent(x);
+    auto c  = Left(x) ? Left(x) : Right(x);
 
-    if (c) Parent(c) = p;
-
-    if (p && Left(p) == x)
-      Left(p) = c;
-    else if (p) // Right(p) == x
-      Right(p) = c;
+    if (!Isnil(c)) Parent(c) = px;
+    if (!Isnil(px) && Left(px) == x)
+      Left(px) = c;
+    else if (!Isnil(px)) // Right(px) == x
+      Right(px) = c;
 
     detach(x);
-    return {c, x};
+    return {c, px, x};
   };
 
 private:
