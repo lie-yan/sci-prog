@@ -6,11 +6,16 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <thread>
 
 void print_sequence (const RBTree& p) {
   for (auto t = p.successor(nullptr); t != nullptr; t = p.successor(t)) {
     std::cout << t->key << " ";
   }
+}
+
+void print_tree (const RBTree& p) {
+  std::cout << p.string_rep() << std::endl;
 }
 
 void print_vector (const std::vector<int>& v) {
@@ -21,14 +26,23 @@ void print_vector (const std::vector<int>& v) {
 }
 
 void test () {
-
   auto p = std::make_unique<RBTree>();
+  std::random_device              rd;
+  std::mt19937                    g(rd());
+  std::uniform_int_distribution<> dist1(1, 30);
+  std::uniform_int_distribution<> dist2(1, 8000);
 
-  std::random_device rd;
-  std::mt19937       g(rd());
+  std::vector<int> v;
 
-  std::vector<int> v = {3, 1, 11, 9, 7, 5,};
+  int count = dist1(g);
+  v.clear();
+  for (int i = 0; i < count; ++i) {
+    v.push_back(dist2(g));
+  }
 
+  std::sort(v.begin(), v.end());
+  auto last = std::unique(v.begin(), v.end());
+  v.erase(last, v.end());
   std::shuffle(v.begin(), v.end(), g);
   print_vector(v);
 
@@ -39,18 +53,17 @@ void test () {
     std::cout << "\n";
   }
 
-  std::cout << p->lower_bound(6)->key << std::endl;
-  std::cout << p->lower_bound(7)->key << std::endl;
-  std::cout << p->least()->key << std::endl;
-  std::cout << p->greatest()->key << std::endl;
+  //  std::cout << p->lower_bound(6)->key << std::endl;
+  //  std::cout << p->lower_bound(7)->key << std::endl;
+  std::cout << p->min()->key << std::endl;
+  std::cout << p->max()->key << std::endl;
 
   print_sequence(*p);
   std::cout << "\n";
 
   std::shuffle(v.begin(), v.end(), g);
 
-
-//  v = {1, 7, 9, 11, 3, 5, };
+  //  v = {3, 10, 7, 1, 4, 9, 6, 8, 2, 5,};
   print_vector(v);
   for (auto x: v) {
     printf("x = %2d: ", x);
@@ -61,9 +74,11 @@ void test () {
 }
 
 int main () {
+  using namespace std::chrono_literals;
 
-  for (int i = 0; i < 1000; i++) {
-    printf("========= %d ==========\n", i);
+  while (true) {
+    printf("===================\n");
     test();
+    std::this_thread::sleep_for(1ms);
   }
 }

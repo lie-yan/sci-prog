@@ -36,27 +36,12 @@ public:
   using Key = int;
   using Value = int;
 
-  static int key_cmp (const Key& lhs, const Key& rhs) {
-    if (lhs < rhs) return -1;
-    else if (rhs < lhs) return 1;
-    else return 0;
-  }
-
   enum class Color : uint8_t {
     BLACK = 0,
     RED,
   };
 
   using Colorref = Color&;
-
-  static Color flip (Color c) {
-    switch (c) {
-    case Color::BLACK:
-      return Color::RED;
-    case Color::RED:
-      return Color::BLACK;
-    }
-  };
 
   struct Node {
     Color color;
@@ -85,19 +70,27 @@ public:
 
   ~RBTree () { destroy(root_); }
 
-  static void destroy (Nodeptr t) {
-    if (!Isnil(t)) {
-      destroy(Left(t));
-      destroy(Right(t));
-      delete t;
-    }
-  }
-
   [[nodiscard]] bool is_empty () const { return Isnil(root_); }
 
-  [[nodiscard]] Nodeptr least () const { return leftmost(root_); }
+  [[nodiscard]] Nodeptr min () const { return leftmost(root_); }
 
-  [[nodiscard]] Nodeptr greatest () const { return rightmost(root_); }
+  [[nodiscard]] Nodeptr max () const { return rightmost(root_); }
+
+  std::string string_rep () const {
+    return string_rep(root_);
+  }
+
+  static std::string string_rep (Nodeptr t) {
+
+    if (Isnil(t)) return "";
+    else {
+      std::string left  = string_rep(Left(t));
+      std::string right = string_rep(Right(t));
+      std::string color = (IsRed(t) ? "R" : "B");
+
+      return "(" + left + std::to_string(t->key) + color + right + ")";
+    }
+  }
 
   /**
    * @brief Given a key, return the node corresponding to the greatest key less
@@ -247,7 +240,7 @@ protected:
   }
 
   static Nodepref Sibling (Nodeptr x) {
-    if (IsRight(x))
+    if (IsLeft(x))
       return Right(Parent(x));
     else
       return Left(Parent(x));
@@ -466,61 +459,61 @@ protected:
    */
   static Nodeptr tarjan_insert (Nodeptr t, Key key, Value value) {
 
-    auto[found, tp] = find(t, key);
+    auto[x, px] = find(t, key);
 
     // Cases:
     //  1) found
     //  2) empty tree
     //  3) nonempty tree and not found
 
-    if (found) { // Case 1)
-      found->value = value;
+    if (!Isnil(x)) { // Case 1)
+      x->value = value;
       return t;
-    } else if (Isnil(tp)) { // Case 2)
+    } else if (Isnil(px)) { // Case 2)
       assert(Isnil(t));
       return new Node(key, value, Color::RED);
     }
 
     // Case 3)
-
-    auto x = new Node(key, value, Color::RED);
-    attach(x, tp);
+    x = new Node(key, value, Color::RED);
+    attach(x, px);
 
     while (true) {
-      Nodeptr p1 = Parent(x);
+      px = Parent(x);
 
-      if (!IsRed(x) || !IsRed(p1)) // conformal to Tarjan invariant 2)
+      if (!IsRed(x) || !IsRed(px)) // conformal to Tarjan invariant 2)
         break;
 
-      // IsRed(x) && IsRed(Parent(x))
-      // IsRed(Parent(x)) ⇒ Grandparent(x) != nullptr
-      Nodeptr p2 = Grandparent(x);
-      assert(p2);
+      // IsRed(x) && IsRed(px)
+      // IsRed(px) ⇒ !Isnil(Grandparent(x)) as there must be a black node
+      //    in the path to the root.
+      Nodeptr ppx = Parent(px);
+      assert(ppx);
 
-      if (IsRed(Left(p2)) && IsRed(Right(p2))) {
-        tarjan_promote(p2);
-        x = p2;
+      if (IsRed(Left(ppx)) && IsRed(Right(ppx))) {
+        tarjan_promote(ppx);
+        x = ppx;
       } else {
-        bool p1_left = (p1 == Left(p2)); // p1 is a left child
-        bool x_left  = (x == Left(p1)); // x is a left child
 
-        if (x_left && p1_left) { // zag-zag
-          p2 = rotate_right_with_fixup(p2);
-        } else if (!x_left && !p1_left) { // zig-zig
-          p2 = rotate_left_with_fixup(p2);
-        } else if (x_left) { // zig-zag
-          // !p1_left
-          Right(p2)         = rotate_right(Right(p2));
-          Parent(Right(p2)) = p2;
-          p2 = rotate_left_with_fixup(p2);
-        } else { // zag-zig
-          // !x_left && p1_left
-          Left(p2)         = rotate_left(Left(p2));
-          Parent(Left(p2)) = p2;
-          p2 = rotate_right_with_fixup(p2);
+        if (IsLeft(x)) {
+          if (IsLeft(px)) { // zag-zag
+            ppx = rotate_right_with_fixup(ppx);
+          } else { // zig-zag
+            Right(ppx)         = rotate_right(Right(ppx));
+            Parent(Right(ppx)) = ppx;
+            ppx = rotate_left_with_fixup(ppx);
+          }
+        } else {
+          if (IsLeft(px)) { // zag-zig
+            Left(ppx)         = rotate_left(Left(ppx));
+            Parent(Left(ppx)) = ppx;
+            ppx = rotate_right_with_fixup(ppx);
+          } else { // zig-zig
+            ppx = rotate_left_with_fixup(ppx);
+          }
         }
 
-        if (Isnil(Parent(p2))) t = p2;
+        if (Isnil(Parent(ppx))) t = ppx;
         break;
       }
     }
@@ -538,6 +531,7 @@ protected:
     std::tie(x, px) = find(t, key);
     // Invariant:
     //    !Isnil(x) ⇒ (px == Parent(x))
+    assert(Isnil(x) || (px == Parent(x)));
 
     if (Isnil(x)) return {t, nullptr};
 
@@ -568,7 +562,7 @@ protected:
     // rank(x) + 2 == rank(px)
 
     // Invariant:
-    //    !Isnil(x) ⇒ (px == Parent(x))
+    assert(Isnil(x) || (px == Parent(x)));
     //    !Isnil(x0)
     auto YSibling = [] (Nodeptr x, Nodeptr px) -> Nodeptr {
       return !Isnil(x) ? Sibling(x) :
@@ -589,46 +583,41 @@ protected:
       assert(!IsRed(y));
       // Case 1
       if (!IsRed(Left(y)) && !IsRed(Right(y))) { // Case 1a
-
         // Demote px.
-        // Don't flip Color_(x).
-        Color_(y)  = flip(Color_(y));
-        Color_(px) = flip(Color_(px));
-        assert(IsRed(y));
-
+        bool no_violation = IsRed(px);
+        Color_(px) = Color::BLACK;
+        Color_(y)  = Color::RED;
         x = px, px = Parent(x);
         // x0 := x
-        if (!IsRed(x)) break;
+        if (no_violation) break;
       } else if (IsRight(y)) { // IsLeft(x)
         if (IsRed(Right(y))) {
           // Case 1b
           px = rotate_left_with_fixup(px);
           assert(IsRed(Right(px)));
           Color_(Right(px)) = Color::BLACK;
-          break;
         } else {
           // Case 1c
           Right(px) = rotate_right(Right(px));
           px = rotate_left_with_fixup(px);
           assert(IsRed(Right(px)));
           Color_(Right(px)) = Color::BLACK;
-          break;
         }
+        break;
       } else {
         if (IsRed(Left(y))) {
           // Case 1b
           px = rotate_right_with_fixup(px);
           assert(IsRed(Left(px)));
           Color_(Left(px)) = Color::BLACK;
-          break;
         } else {
           // Case 1c
           Left(px) = rotate_left(Left(px));
           px = rotate_right_with_fixup(px);
           assert(IsRed(Left(px)));
           Color_(Left(px)) = Color::BLACK;
-          break;
         }
+        break;
       }
     }
 
@@ -671,7 +660,7 @@ protected:
     assert(Isnil(Left(x)) || Isnil(Right(x)));
 
     auto px    = Parent(x);
-    auto new_x = Left(x) ? Left(x) : Right(x);
+    auto new_x = Isnil(Left(x)) ? Right(x) : Left(x);
 
     if (!Isnil(new_x)) Parent(new_x) = px;
     if (!Isnil(px) && Left(px) == x)
@@ -681,6 +670,32 @@ protected:
 
     detach(x);
     return {new_x, px, x};
+  };
+
+  /**
+   * @brief Given a node t, destroy all the nodes in the subtree rooted at t.
+   */
+  static void destroy (Nodeptr t) {
+    if (!Isnil(t)) {
+      destroy(Left(t));
+      destroy(Right(t));
+      delete t;
+    }
+  }
+
+  static int key_cmp (const Key& lhs, const Key& rhs) {
+    if (lhs < rhs) return -1;
+    else if (rhs < lhs) return 1;
+    else return 0;
+  }
+
+  static Color flip (Color c) {
+    switch (c) {
+    case Color::BLACK:
+      return Color::RED;
+    case Color::RED:
+      return Color::BLACK;
+    }
   };
 
 private:
