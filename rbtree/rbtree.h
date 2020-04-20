@@ -76,19 +76,24 @@ public:
 
   [[nodiscard]] Nodeptr max () const { return rightmost(root_); }
 
-  std::string string_rep () const {
+  [[nodiscard]] std::string string_rep () const {
     return string_rep(root_);
   }
 
   static std::string string_rep (Nodeptr t) {
 
-    if (Isnil(t)) return "";
-    else {
-      std::string left  = string_rep(Left(t));
-      std::string right = string_rep(Right(t));
-      std::string color = (IsRed(t) ? "R" : "B");
+    auto key_rep = [] (Nodeptr t) -> std::string {
+      return std::to_string(t->key) + (IsRed(t) ? "R" : "B");
+    };
 
-      return "(" + left + std::to_string(t->key) + color + right + ")";
+    if (Isnil(t)) {
+      return ".";
+    } else if (IsLeaf(t)) {
+      return key_rep(t);
+    } else {
+      std::string left  = string_rep(Left(t)) + " ";
+      std::string right = " " + string_rep(Right(t));
+      return "(" + left + key_rep(t) + right + ")";
     }
   }
 
@@ -217,6 +222,10 @@ protected:
 
   static bool IsRight (Nodeptr x) {
     return Right(Parent(x)) == x;
+  }
+
+  static bool IsLeaf (Nodeptr x) {
+    return Isnil(Left(x)) && Isnil(Right(x));
   }
 
   static Colorref Color_ (Nodeptr x) {
