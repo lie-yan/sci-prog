@@ -25,11 +25,11 @@ void print_vector (const std::vector<std::pair<int, int>>& v) {
   printf("\n");
 }
 
-void test () {
+std::vector<std::pair<int, int>> random_update_sequence (int max_count, int max_value) {
   std::random_device              rd;
   std::mt19937                    g(rd());
-  std::uniform_int_distribution<> dist1(1, 100);
-  std::uniform_int_distribution<> dist2(1, 800);
+  std::uniform_int_distribution<> dist1(1, max_count);
+  std::uniform_int_distribution<> dist2(1, max_value);
 
   std::vector<std::pair<std::pair<int, int>, int>> v;
 
@@ -61,11 +61,23 @@ void test () {
     return x.second < y.second;
   });
 
+  std::vector<std::pair<int, int>> res;
+
+  std::transform(v.begin(), v.end(), std::back_inserter(res),
+                 [] (const auto& x) {
+                   return x.first;
+                 });
+  return res;
+}
+
+void test () {
+  auto v = random_update_sequence(100, 800);
+
   auto p = std::make_unique<RBTree>();
 
   for (const auto& x : v) {
-    if (x.first.second == 0) p->insert(x.first.first, 0);
-    else p->erase(x.first.first);
+    if (x.second == 0) p->insert(x.first, 0);
+    else p->erase(x.first);
 
     print_sequence(*p);
     printf("\n");
