@@ -5,6 +5,7 @@
 #include "rbtree.h"
 #include <iostream>
 #include <vector>
+#include <random>
 
 void print_sequence (RBTree* p) {
   for (auto t = p->successor(nullptr); t != nullptr; t = p->successor(t)) {
@@ -12,16 +13,26 @@ void print_sequence (RBTree* p) {
   }
 }
 
+void print_vector (const std::vector<int>& v) {
+  for (auto x: v) {
+    printf("%d, ", x);
+  }
+  printf("\n");
+}
+
 int main () {
 
   auto* p = new RBTree();
 
-  std::vector<int> v = {5, 7, 9, 1, 3, 11};
+  std::random_device rd;
+  std::mt19937       g(rd());
+
+  std::vector<int> v = {3, 11, 9, 1, 5, 7,};
+
+//  std::shuffle(v.begin(), v.end(), g);
+  print_vector(v);
 
   for (auto x: v) {
-//  int count = 20;
-//  for  (int i = 0; i < count; i++) {
-//    int x = std::rand() % count;
     printf("x = %2d: ", x);
     p->insert(x, 0);
     print_sequence(p);
@@ -35,5 +46,17 @@ int main () {
 
   print_sequence(p);
   std::cout << "\n";
+
+  std::shuffle(v.begin(), v.end(), g);
+  print_vector(v);
+
+
+  v = {3, 7, 5, 9, 11, 1,};
+  for (auto x: v) {
+    printf("x = %2d: ", x);
+    p->erase(x);
+    print_sequence(p);
+    std::cout << "\n";
+  }
 
 }

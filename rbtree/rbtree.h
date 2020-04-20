@@ -28,14 +28,8 @@ public:
  *       a parent.
  *    Refer to Data Structures and Network Algorithms by Tarjan.
  *
- * @invariant
- *    Sedgewick invariant:
- *    1) Symmetric order.
- *    2) Red links lean left.
- *    3) No node has two red links connected to it.
- *    4) Perfect black balance: every path from an internal node to a null link
- *       has the same number of black links.
- *    Refer to Algorithms by Sedgewick and Wayne.
+ *    A node is black is rank(p(x)) = rank(x) + 1 or p(x) is undefined,
+ *    and red if rank(p(x)) = rank(x).
  */
 class RBTree {
 public:
@@ -97,9 +91,9 @@ public:
 
   /**
    * @brief Given a key, return the node corresponding to the greatest key less
-   *    than or equal to the given key.
+   *  than or equal to the given key.
    *
-   *    If no such node exists, return null.
+   *  If no such node exists, return null.
    */
   [[nodiscard]] Nodeptr lower_bound (const Key& key) const {
     auto[u, p]= std::pair(Nodeptr(nullptr), root_);
@@ -182,7 +176,7 @@ public:
   /**
    * @brief Given a key and a value, insert (key, value) into the search tree.
    *
-   *    If key already exists in the search tree, replace the value.
+   *  If key already exists in the search tree, replace the value.
    */
   void insert (Key key, Value value) {
     root_ = tarjan_insert(root_, key, value);
@@ -190,8 +184,22 @@ public:
     Color_(root_) = Color::BLACK;
   }
 
+  /**
+   * @brief Given a key, delete the node with the given key if any.
+   */
   void erase (Key key) {
-
+    assert(!Isnil(root_));
+    Nodeptr excised;
+    std::tie(root_, excised) = tarjan_delete(root_, key);
+    if (Isnil(excised)) {
+      throw std::runtime_error("The given key is not found.");
+    } else {
+      delete excised;
+      if (!Isnil(root_)) {
+        Parent(root_) = nullptr;
+        Color_(root_) = Color::BLACK;
+      }
+    }
   }
 
 protected:
@@ -438,45 +446,6 @@ protected:
   /**
    * @post The new root is hung under the old parent of t.
    */
-  static Nodeptr sedgewick_insert (Nodeptr t, Key key, Value value) {
-    if (t == nullptr)
-      return new Node(key, value, Color::RED);
-
-    // t != nullptr
-
-    if (int cmp = key_cmp(key, t->key); cmp < 0) {
-      t->left         = sedgewick_insert(t->left, key, value);
-      t->left->parent = t;
-    } else if (cmp > 0) {
-      t->right         = sedgewick_insert(t->right, key, value);
-      t->right->parent = t;
-    } else {
-      t->value = value;
-    }
-
-    if (IsRed(t->right) && !IsRed(t->left)) { // right leaning red link
-      // t->right != nullptr
-      auto tmp = t->parent;
-      t = rotate_left(t);
-      t->parent = tmp;
-    }
-    if (IsRed(t->left) && IsRed(t->left->left)) {
-      // t->left && t->left->left
-      auto tmp = t->parent;
-      t = rotate_right(t);
-      t->parent = tmp;
-    }
-    if (IsRed(t->left) && IsRed(t->right)) {
-      // t->left && t->right
-      flip_colors(t);
-    }
-
-    return t;
-  }
-
-  /**
-   * @post The new root is hung under the old parent of t.
-   */
   static Nodeptr tarjan_insert (Nodeptr t, Key key, Value value) {
 
     auto[found, tp] = find(t, key);
@@ -541,12 +510,18 @@ protected:
     return t;
   }
 
-  static Nodeptr tarjan_delete (Nodeptr t, const Key& key) {
-    auto[x, px] = find(t, key);
+  /**
+   * @brief Given a node t, and a key, delete the node with the given key from
+   *  the subtree rooted at t, and return (t, excised) where t is the new
+   *  subtree after deletion, and excised is the deleted node.
+   */
+  static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const Key& key) {
+    Nodeptr x, px;
+    std::tie(x, px) = find(t, key);
     // Invariant:
     //    !Isnil(x) ⇒ (px == Parent(x))
 
-    if (Isnil(x)) return t;
+    if (Isnil(x)) return {t, nullptr};
 
     // x0 := x
     // !Isnil(x0)
@@ -566,30 +541,28 @@ protected:
     // x0 == excised
     // !Isnil(x0)
 
-    if (IsRed(excised.get())) {
+    if (IsRed(excised.get()) || IsRed(x)) { // conformal to property 1)
       if (!Isnil(x)) Color_(x) = Color::BLACK;
-      return Isnil(px) ? x : t;
+      return {Isnil(px) ? x : t, excised.release()};
     }
+
     // !IsRed(x0)
 
     // Invariant:
     //    !Isnil(x) ⇒ (px == Parent(x))
     //    !Isnil(x0)
     while (!Isnil(px)) {
-      if (IsRed(x)) { // conformal to property 1)
-        Color_(x) = Color::BLACK;
-        return t;
-      }
-      // !IsRed(x)
       // violating property 1)
-
-      Nodeptr y = Sibling(x);
+      Nodeptr y = !Isnil(x) ? Sibling(x) :
+                  !Isnil(Left(px)) ? Left(px) : Right(px);
       // !Isnil(px) && !Isnil(x0) && !IsRed(x0) ⇒ !Isnil(y)
       assert(!Isnil(y));
 
       if (IsRed(y)) {
-        if (IsLeft(y)) rotate_right_with_fixup(Parent(y));
-        else rotate_left_with_fixup(Parent(y));
+        if (IsLeft(y))
+          rotate_right_with_fixup(px);
+        else
+          rotate_left_with_fixup(px);
       } else if (!IsRed(Left(y)) && !IsRed(Right(y))) {
 
         // Demote Parent(x).
@@ -597,43 +570,47 @@ protected:
         Color_(y)  = flip(Color_(y));
         Color_(px) = flip(Color_(px));
 
-        x  = px;
+        x = px, px = Parent(x);
         // x0 := x
-        px = Isnil(x) ? nullptr : Parent(x);
-      } else if (IsLeft(x)) {
+
+        assert(IsRed(y));
+        if (!IsRed(x)) break;
+      } else if (IsRight(y)) { // IsLeft(x)
         if (IsRed(Right(y))) {
           // Case 1.1b
-          y = rotate_left_with_fixup(px);
-          assert(IsRed(Right(y)));
-          Color_(Right(y)) = Color::BLACK;
+          rotate_left_with_fixup(px);
+          assert(IsRed(Right(px)));
+          Color_(Right(px)) = Color::BLACK;
           break;
         } else {
           // Case 1.1c
           Right(px) = rotate_right(Right(px));
-          y = rotate_left_with_fixup(px);
-          assert(IsRed(Right(y)));
-          Color_(Right(y)) = Color::BLACK;
+          rotate_left_with_fixup(px);
+          assert(IsRed(Right(px)));
+          Color_(Right(px)) = Color::BLACK;
           break;
         }
       } else {
         if (IsRed(Left(y))) {
           // Case 1.1b
-          y = rotate_right_with_fixup(px);
-          assert(IsRed(Left(y)));
-          Color_(Left(y)) = Color::BLACK;
+          rotate_right_with_fixup(px);
+          assert(IsRed(Left(px)));
+          Color_(Left(px)) = Color::BLACK;
           break;
         } else {
           // Case 1.1c
           Left(px) = rotate_left(Left(px));
-          y = rotate_right_with_fixup(px);
-          assert(IsRed(Left(y)));
-          Color_(Left(y)) = Color::BLACK;
+          rotate_right_with_fixup(px);
+          assert(IsRed(Left(px)));
+          Color_(Left(px)) = Color::BLACK;
           break;
         }
       }
     }
 
-    return Isnil(px) ? x : t;
+    auto ret = Isnil(px) ? x :
+               Isnil(Parent(px)) ? px : t;
+    return {ret, excised.release()};
   }
 
   static void tarjan_promote (Nodeptr t) {
