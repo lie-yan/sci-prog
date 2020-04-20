@@ -534,9 +534,7 @@ protected:
     assert(Isnil(x) || (px == Parent(x)));
 
     if (Isnil(x)) return {t, nullptr};
-
     // x0 := x
-    // !Isnil(x0)
 
     // Cases:
     //    1) Node x has null child.
@@ -546,12 +544,12 @@ protected:
       std::tie(x, px, excised) = excise(x);
     } else { // !Isnil(Left(x)) && !Isnil(Right(x))
       auto* pre = rightmost(Left(x));
-      // !Isnil(pre) && Isnil(Right(pre))
+      assert(!Isnil(pre) && Isnil(Right(pre)));
       swap_payload(*x, *pre);
       std::tie(x, px, excised) = excise(pre);
     }
     // excised == x0
-    // !Isnil(excised)
+    assert(!Isnil(excised.get()));
 
     if (IsRed(excised.get()) || IsRed(x)) { // conformal to property 1)
       if (!Isnil(x)) Color_(x) = Color::BLACK;
@@ -560,9 +558,9 @@ protected:
     }
     // !IsRed(x0) && !IsRed(x)
     // rank(x) + 2 == rank(px)
+    // Property 1) is violated.
 
     // Invariant:
-    assert(Isnil(x) || (px == Parent(x)));
     //    !Isnil(x0)
     auto YSibling = [] (Nodeptr x, Nodeptr px) -> Nodeptr {
       return !Isnil(x) ? Sibling(x) :
@@ -573,6 +571,9 @@ protected:
       // Property 1) is violated.
       Nodeptr y = YSibling(x, px);
       // !Isnil(px) && !Isnil(x0) && !IsRed(x0) ⇒ !Isnil(y)
+      //    Case 1) x0 is equal to excised which is black.
+      //    Case 2) x0 is as set in the loop body. Note that the negation of
+      //    no_violation implies !IsRed(x0).
       assert(!Isnil(y));
 
       if (IsRed(y)) { // Case 2
@@ -583,12 +584,13 @@ protected:
       assert(!IsRed(y));
       // Case 1
       if (!IsRed(Left(y)) && !IsRed(Right(y))) { // Case 1a
-        // Demote px.
         bool no_violation = IsRed(px);
-        Color_(px) = Color::BLACK;
-        Color_(y)  = Color::RED;
+        // x0 := px
+        { // Demote px.
+          Color_(px) = Color::BLACK;
+          Color_(y)  = Color::RED;
+        }
         x = px, px = Parent(x);
-        // x0 := x
         if (no_violation) break;
       } else if (IsRight(y)) { // IsLeft(x)
         if (IsRed(Right(y))) {
