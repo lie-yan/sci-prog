@@ -55,6 +55,15 @@ public:
 
   using Colorref = Color&;
 
+  static Color flip (Color c) {
+    switch (c) {
+    case Color::BLACK:
+      return Color::RED;
+    case Color::RED:
+      return Color::BLACK;
+    }
+  };
+
   struct Node {
     Color color;
     Node* parent = nullptr;
@@ -191,6 +200,14 @@ protected:
     return x == nullptr;
   }
 
+  static bool IsLeft (Nodeptr x) {
+    return Left(Parent(x)) == x;
+  }
+
+  static bool IsRight (Nodeptr x) {
+    return Right(Parent(x)) == x;
+  }
+
   static Colorref Color_ (Nodeptr x) {
     return (*x).color;
   }
@@ -207,17 +224,12 @@ protected:
     return (*x).right;
   }
 
-  static Nodeptr Grandparent (Nodeptr x) {
-    if (Isnil(x) || Isnil(Parent(x)) || Isnil(Parent(Parent(x))))
-      return nullptr;
-    else
-      return Parent(Parent(x));
+  static Nodepref Grandparent (Nodeptr x) {
+    return Parent(Parent(x));
   }
 
-  static Nodeptr Sibling (Nodeptr x) {
-    if (Isnil(x) || Isnil(Parent(x)))
-      return nullptr;
-    else if (x == Left(Parent(x)))
+  static Nodepref Sibling (Nodeptr x) {
+    if (IsRight(x))
       return Right(Parent(x));
     else
       return Left(Parent(x));
@@ -256,10 +268,10 @@ protected:
   }
 
   /**
- * @brief Given a node t, return the leftmost node in the subtree rooted at t.
- *
- *  In the case of null node, return null.
- */
+   * @brief Given a node t, return the leftmost node in the subtree rooted at t.
+   *
+   *  In the case of null node, return null.
+   */
   static Nodeptr leftmost (Nodeptr t) {
     if (Isnil(t)) return nullptr;
 
@@ -418,15 +430,6 @@ protected:
    * @brief Given a node t, flip the colors of itself and its two children.
    */
   static void flip_colors (Nodeptr t) {
-    auto flip = [] (Color c) -> Color {
-      switch (c) {
-      case Color::BLACK:
-        return Color::RED;
-      case Color::RED:
-        return Color::BLACK;
-      }
-    };
-
     Color_(t)        = flip(Color_(t));
     Color_(Left(t))  = flip(Color_(Left(t)));
     Color_(Right(t)) = flip(Color_(Right(t)));
@@ -543,7 +546,7 @@ protected:
     std::tie(x, std::ignore) = find(t, key);
     if (Isnil(x)) return t;
 
-    // nullptr != x
+    // !Isnil(x)
 
     // Cases:
     //    1) x has null child.
@@ -554,10 +557,10 @@ protected:
     if (Isnil(Left(x)) || Isnil(Right(x))) {
       std::tie(x, retired) = retire(x);
     } else {
-      // x->left != nullptr
+      // !Isnil(Left(x))
       auto* predecessor = rightmost(Left(x));
       assert(!Isnil(predecessor));
-      // predecessor->right == nullptr
+      // Isnil(Right(predecessor))
 
       swap_payload(*x, *predecessor);
       x = predecessor;
@@ -567,43 +570,54 @@ protected:
     bool retired_black = !is_red(retired.get());
     bool x_nil         = Isnil(x);
     bool x_black       = !is_red(x);
-    assert(!x_nil || x_black); // x_nil ⇒ x_black
     assert(retired_black || x_black);
 
-    if (!retired_black || !x_black) {
+    if (!retired_black || !x_black) { // conformal to i)
       x->color = Color::BLACK;
       return (retired.get() == t) ? x : t;
     }
 
     // retired_black && x_black, violating property 1)
-    bool        x_left = (Left(Parent(x)) == x);
-    bool        y_left = !x_left;
-    if (Nodeptr y      = Sibling(x); !is_red(y)) {
-      if (!y) {
-        tarjan_demote(x->parent);
-        x = x->parent;
-        // TODO: test violation of (i)
-      } else if (bool yl_red = is_red(y->left), yr_red = is_red(y->right);
+    bool x_left = (Left(Parent(x)) == x);
+    bool y_left = !x_left;
+
+    if (Nodeptr y = Sibling(x); !is_red(y)) {
+      assert(y);
+
+      if (bool yl_red = is_red(Left(y)), yr_red = is_red(Right(y));
           !yl_red && !yr_red) {
-        tarjan_demote(x->parent);
-        x = x->parent;
+
+        // Demote Parent(x).
+        // The color of x is kept as BLACK.
+        {
+          Color_(y)         = flip(Color_(y));
+          Color_(Parent(x)) = flip(Color_(Parent(x)));
+        }
+
+        x = Parent(x);
         // TODO: test violation of (i)
+        // is_red(x) => conformal to 1), set x->color to black
+        // !is_red(x) => violation of 1), demote and check again
       } else if (x_left && yr_red) { // Case 1.1b
-        y = rotate_left(Parent(x));
-        y->right->color = Color::BLACK;
+        y = rotate_left_with_fixup(Parent(x));
+        assert(is_red(Right(y)));
+        Color_(Right(y)) = Color::BLACK;
       } else if (!x_left && yl_red) { // Case 1.1b
-        y = rotate_right(Parent(x));
-        y->left->color = Color::BLACK;
+        y = rotate_right_with_fixup(Parent(x));
+        assert(is_red(Left(y)));
+        Color_(Left(y)) = Color::BLACK;
       } else if (x_left) { // Case 1.1c
         // yl_red
-        y = rotate_right(y);
-        y->right->color = Color::BLACK;
-        x->parent       = rotate_left(Parent(x));
+        y = Right(Parent(x)) = rotate_right(Right(Parent(x)));
+        y = rotate_left_with_fixup(Parent(x));
+        assert(is_red(Right(y)));
+        Color_(Right(y)) = Color::BLACK;
       } else { // Case 1.1c
         // yr_red
-        y = rotate_left(y);
-        y->left->color = Color::BLACK;
-        x->parent      = rotate_right(x->parent);
+        y = Left(Parent(x)) = rotate_left(Left(Parent(x)));
+        y = rotate_right_with_fixup(Parent(x));
+        assert(is_red(Left(y)));
+        Color_(Left(y)) = Color::BLACK;
       }
     } else { // is_red(y)
       if (y_left) rotate_right_with_fixup(Parent(y));
@@ -613,11 +627,6 @@ protected:
 
   static void tarjan_promote (Nodeptr t) {
     assert(t && !is_red(t) && is_red(Left(t)) && is_red(Right(t)));
-    flip_colors(t);
-  }
-
-  static void tarjan_demote (Nodeptr t) {
-    assert(is_red(t) && !is_red(Left(t)) && !is_red(Right(t)));
     flip_colors(t);
   }
 
