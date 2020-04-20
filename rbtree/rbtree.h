@@ -544,17 +544,16 @@ protected:
   static Nodeptr tarjan_delete (Nodeptr t, const Key& key) {
     auto[x, px] = find(t, key);
     // Invariant:
-    //    Isnil(x)  ⇒ Isnil(px)
     //    !Isnil(x) ⇒ (px == Parent(x))
 
     if (Isnil(x)) return t;
 
-    // !Isnil(x)
+    // x0 := x
+    // !Isnil(x0)
 
     // Cases:
     //    1) Node x has null child.
     //    2) Both children of x are not null.
-
     scoped_ptr<Node> excised;
     if (Isnil(Left(x)) || Isnil(Right(x))) {
       std::tie(x, px, excised) = excise(x);
@@ -564,26 +563,29 @@ protected:
       swap_payload(*x, *pre);
       std::tie(x, px, excised) = excise(pre);
     }
+    // excised == x0
+    // !Isnil(excised)
 
     if (IsRed(excised.get())) {
       if (!Isnil(x)) Color_(x) = Color::BLACK;
       return Isnil(px) ? x : t;
     }
+    // !IsRed(excised)
 
-    while (true) {
-      if (Isnil(px)) return x;
-      // !Isnil(px) && !Isnil(x)
-
+    // Invariant:
+    //    !Isnil(x) ⇒ (px == Parent(x))
+    //    !Isnil(x0)
+    while (!Isnil(px)) {
       if (IsRed(x)) { // conformal to property 1)
         Color_(x) = Color::BLACK;
-        return Isnil(px) ? x : t;
+        return t;
       }
-
+      // !IsRed(x)
       // violating property 1)
 
       Nodeptr y = Sibling(x);
-      // !Isnil(x) && !Isnil(px) ⇒ !Isnil(Sibling(x))
-      // !Isnil(y)
+      // !Isnil(px) && !Isnil(x0) && !IsRed(x0) ⇒ !Isnil(y)
+      assert(!Isnil(y));
 
       if (IsRed(y)) {
         if (IsLeft(y)) rotate_right_with_fixup(Parent(y));
@@ -595,9 +597,9 @@ protected:
         Color_(y)  = flip(Color_(y));
         Color_(px) = flip(Color_(px));
 
-        x  = Parent(x);
+        x  = px;
+        // x0 := x
         px = Isnil(x) ? nullptr : Parent(x);
-
       } else if (IsLeft(x)) {
         if (IsRed(Right(y))) {
           // Case 1.1b
