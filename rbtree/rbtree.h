@@ -102,7 +102,7 @@ public:
    *    If no such node exists, return null.
    */
   [[nodiscard]] Nodeptr lower_bound (const Key& key) const {
-    auto[u, p]= std::pair((Nodeptr)nullptr, root_);
+    auto[u, p]= std::pair(Nodeptr(nullptr), root_);
     // Let P be the set of nodes that have been compared with the given key.
     // Let P' be { x ∈ P | x.key ≤ key }.
     // Invariant:
@@ -143,10 +143,10 @@ public:
     } else if (Right(Parent(t)) == t) { // no left subtree ∧ be right child
       return Parent(t);
     } else { // no left subtree ∧ be left child
-      // t->parent != nullptr
-      auto[u, v] = ascend_rightward(Parent(t));
-      // (v == nullptr) ∨ (v != nullptr ∧ u == v->right)
-      return v;
+      // !Isnil(Parent(t))
+      auto[u, pu] = ascend_rightward(Parent(t));
+      // Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
+      return pu;
     }
   }
 
@@ -172,10 +172,10 @@ public:
       return Parent(t);
     } else { // no right subtree ∧ be right child
 
-      // t->parent != nullptr
-      auto[u, v] = ascend_leftward(Parent(t));
-      // (v == nullptr) ∨ (v != nullptr ∧ u == v->left)
-      return v;
+      // !Isnil(Parent(t))
+      auto[u, pu] = ascend_leftward(Parent(t));
+      // Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
+      return pu;
     }
   }
 
@@ -186,8 +186,8 @@ public:
    */
   void insert (Key key, Value value) {
     root_ = tarjan_insert(root_, key, value);
-    root_->parent = nullptr;
-    root_->color  = Color::BLACK;
+    Parent(root_) = nullptr;
+    Color_(root_) = Color::BLACK;
   }
 
   void erase (Key key) {
@@ -255,7 +255,7 @@ protected:
    *    checked before return.
    */
   static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const Key& key) {
-    auto[p, tp]= std::pair(t, (Nodeptr)nullptr);
+    auto[p, tp]= std::pair(t, Nodeptr(nullptr));
     while (p) {
       if (int cmp = key_cmp(key, p->key); cmp < 0)
         tp = p, p = Left(p);
@@ -310,7 +310,7 @@ protected:
    *    2) null, otherwise.
    *
    * @pre t != nullptr
-   * @post (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->right)
+   * @post Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
    */
   static std::pair<Nodeptr, Nodeptr> ascend_rightward (Nodeptr t) {
     assert(!Isnil(t));
@@ -319,7 +319,7 @@ protected:
     while (!Isnil(pu) && u == Left(pu)) {
       u = pu, pu = Parent(pu);
     }
-    // (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->right)
+    // Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
     return {u, pu};
   }
 
@@ -333,7 +333,7 @@ protected:
    *    2) null, otherwise.
    *
    * @pre   t != nullptr
-   * @post  (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->left)
+   * @post  Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
    */
   static std::pair<Nodeptr, Nodeptr> ascend_leftward (Nodeptr t) {
     assert(!Isnil(t));
@@ -342,7 +342,7 @@ protected:
     while (!Isnil(pu) && u == Right(pu)) {
       u = pu, pu = Parent(pu);
     }
-    // (pu == nullptr) ∨ (pu != nullptr ∧ u == pu->left)
+    // Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
     return {u, pu};
   }
 
@@ -352,7 +352,7 @@ protected:
    *  The parent links below the new root are well set. The parent link of the
    *  new root is not.
    *
-   * @pre t && t->right
+   * @pre t && Right(t)
    * @invariant rotate_left() preserves invariant 1) and 4).
    */
   static Nodeptr rotate_left (Nodeptr t) {
@@ -374,7 +374,7 @@ protected:
    *  The parent links below the new root are well set. The parent link of the
    *  new root is not.
    *
-   * @pre t && t->left
+   * @pre t && Left(t)
    * @invariant rotate_right() preserves invariant 1) and 4).
    */
   static Nodeptr rotate_right (Nodeptr t) {
@@ -573,7 +573,7 @@ protected:
     assert(retired_black || x_black);
 
     if (!retired_black || !x_black) { // conformal to i)
-      x->color = Color::BLACK;
+      Color_(x) = Color::BLACK;
       return (retired.get() == t) ? x : t;
     }
 
@@ -596,7 +596,7 @@ protected:
 
         x = Parent(x);
         // TODO: test violation of (i)
-        // is_red(x) => conformal to 1), set x->color to black
+        // is_red(x) => conformal to 1), set Color_(x) to black
         // !is_red(x) => violation of 1), demote and check again
       } else if (x_left && yr_red) { // Case 1.1b
         y = rotate_left_with_fixup(Parent(x));
