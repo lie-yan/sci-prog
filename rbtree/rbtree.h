@@ -238,9 +238,9 @@ protected:
   /**
    * @brief Given a node t, return whether the link pointing to its parent
    *  is red.
-   * @note  is_red(t) ⇒ (t != nullptr)
+   * @note  IsRed(t) ⇒ (t != nullptr)
    */
-  static bool is_red (Nodeptr t) {
+  static bool IsRed (Nodeptr t) {
     if (Isnil(t)) return false;
     else return Color_(t) == Color::RED;
   }
@@ -454,19 +454,19 @@ protected:
       t->value = value;
     }
 
-    if (is_red(t->right) && !is_red(t->left)) { // right leaning red link
+    if (IsRed(t->right) && !IsRed(t->left)) { // right leaning red link
       // t->right != nullptr
       auto tmp = t->parent;
       t = rotate_left(t);
       t->parent = tmp;
     }
-    if (is_red(t->left) && is_red(t->left->left)) {
+    if (IsRed(t->left) && IsRed(t->left->left)) {
       // t->left && t->left->left
       auto tmp = t->parent;
       t = rotate_right(t);
       t->parent = tmp;
     }
-    if (is_red(t->left) && is_red(t->right)) {
+    if (IsRed(t->left) && IsRed(t->right)) {
       // t->left && t->right
       flip_colors(t);
     }
@@ -502,15 +502,15 @@ protected:
     while (true) {
       Nodeptr p1 = Parent(x);
 
-      if (!is_red(x) || !is_red(p1)) // conformal to Tarjan invariant 2)
+      if (!IsRed(x) || !IsRed(p1)) // conformal to Tarjan invariant 2)
         break;
 
-      // is_red(x) && is_red(Parent(x))
-      // is_red(Parent(x)) ⇒ Grandparent(x) != nullptr
+      // IsRed(x) && IsRed(Parent(x))
+      // IsRed(Parent(x)) ⇒ Grandparent(x) != nullptr
       Nodeptr p2 = Grandparent(x);
       assert(p2);
 
-      if (is_red(Left(p2)) && is_red(Right(p2))) {
+      if (IsRed(Left(p2)) && IsRed(Right(p2))) {
         tarjan_promote(p2);
         x = p2;
       } else {
@@ -567,9 +567,9 @@ protected:
       std::tie(x, retired) = retire(x);
     }
 
-    bool retired_black = !is_red(retired.get());
+    bool retired_black = !IsRed(retired.get());
     bool x_nil         = Isnil(x);
-    bool x_black       = !is_red(x);
+    bool x_black       = !IsRed(x);
     assert(retired_black || x_black);
 
     if (!retired_black || !x_black) { // conformal to i)
@@ -581,10 +581,10 @@ protected:
     bool x_left = (Left(Parent(x)) == x);
     bool y_left = !x_left;
 
-    if (Nodeptr y = Sibling(x); !is_red(y)) {
+    if (Nodeptr y = Sibling(x); !IsRed(y)) {
       assert(y);
 
-      if (bool yl_red = is_red(Left(y)), yr_red = is_red(Right(y));
+      if (bool yl_red = IsRed(Left(y)), yr_red = IsRed(Right(y));
           !yl_red && !yr_red) {
 
         // Demote Parent(x).
@@ -596,37 +596,37 @@ protected:
 
         x = Parent(x);
         // TODO: test violation of (i)
-        // is_red(x) => conformal to 1), set Color_(x) to black
-        // !is_red(x) => violation of 1), demote and check again
+        // IsRed(x) => conformal to 1), set Color_(x) to black
+        // !IsRed(x) => violation of 1), demote and check again
       } else if (x_left && yr_red) { // Case 1.1b
         y = rotate_left_with_fixup(Parent(x));
-        assert(is_red(Right(y)));
+        assert(IsRed(Right(y)));
         Color_(Right(y)) = Color::BLACK;
       } else if (!x_left && yl_red) { // Case 1.1b
         y = rotate_right_with_fixup(Parent(x));
-        assert(is_red(Left(y)));
+        assert(IsRed(Left(y)));
         Color_(Left(y)) = Color::BLACK;
       } else if (x_left) { // Case 1.1c
         // yl_red
         y = Right(Parent(x)) = rotate_right(Right(Parent(x)));
         y = rotate_left_with_fixup(Parent(x));
-        assert(is_red(Right(y)));
+        assert(IsRed(Right(y)));
         Color_(Right(y)) = Color::BLACK;
       } else { // Case 1.1c
         // yr_red
         y = Left(Parent(x)) = rotate_left(Left(Parent(x)));
         y = rotate_right_with_fixup(Parent(x));
-        assert(is_red(Left(y)));
+        assert(IsRed(Left(y)));
         Color_(Left(y)) = Color::BLACK;
       }
-    } else { // is_red(y)
+    } else { // IsRed(y)
       if (y_left) rotate_right_with_fixup(Parent(y));
       else rotate_left_with_fixup(Parent(y));
     }
   }
 
   static void tarjan_promote (Nodeptr t) {
-    assert(t && !is_red(t) && is_red(Left(t)) && is_red(Right(t)));
+    assert(t && !IsRed(t) && IsRed(Left(t)) && IsRed(Right(t)));
     flip_colors(t);
   }
 
