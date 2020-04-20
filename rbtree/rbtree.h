@@ -563,14 +563,14 @@ protected:
       swap_payload(*x, *pre);
       std::tie(x, px, excised) = excise(pre);
     }
-    // excised == x0
-    // !Isnil(excised)
+    // x0 == excised
+    // !Isnil(x0)
 
     if (IsRed(excised.get())) {
       if (!Isnil(x)) Color_(x) = Color::BLACK;
       return Isnil(px) ? x : t;
     }
-    // !IsRed(excised)
+    // !IsRed(x0)
 
     // Invariant:
     //    !Isnil(x) ⇒ (px == Parent(x))
