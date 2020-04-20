@@ -660,23 +660,25 @@ protected:
 
   /**
    * @brief Given a node x with at most one child, replace x with its child and
-   *    return the new x, the parent, and the old x.
+   *    return (new_x, px, old_x) which are the new x, the parent of x, and
+   *    the old x.
    * @pre x has at most one child.
    */
   static std::tuple<Nodeptr, Nodeptr, Nodeptr> excise (Nodeptr x) {
     assert(!Isnil(x));
+    assert(Isnil(Left(x)) || Isnil(Right(x)));
 
-    auto px = Parent(x);
-    auto c  = Left(x) ? Left(x) : Right(x);
+    auto px    = Parent(x);
+    auto new_x = Left(x) ? Left(x) : Right(x);
 
-    if (!Isnil(c)) Parent(c) = px;
+    if (!Isnil(new_x)) Parent(new_x) = px;
     if (!Isnil(px) && Left(px) == x)
-      Left(px) = c;
+      Left(px) = new_x;
     else if (!Isnil(px)) // Right(px) == x
-      Right(px) = c;
+      Right(px) = new_x;
 
     detach(x);
-    return {c, px, x};
+    return {new_x, px, x};
   };
 
 private:
