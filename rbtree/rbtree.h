@@ -83,6 +83,16 @@ public:
   using Nodeptr = Node*;
   using Nodepref = Nodeptr&;
 
+  ~RBTree () { destroy(root_); }
+
+  static void destroy (Nodeptr t) {
+    if (!Isnil(t)) {
+      destroy(Left(t));
+      destroy(Right(t));
+      delete t;
+    }
+  }
+
   [[nodiscard]] bool is_empty () const { return Isnil(root_); }
 
   [[nodiscard]] Nodeptr least () const { return leftmost(root_); }
@@ -308,6 +318,14 @@ protected:
     return tp;
   }
 
+  static Nodeptr topmost (Nodeptr t) {
+    auto[tp, p] = std::pair(Nodeptr(nullptr), t);
+    while (!Isnil(p)) {
+      tp = p, p = Parent(p);
+    }
+    return tp;
+  }
+
   /**
    * @brief Given a node t, return a pair (u, pu) such that u is obtained by
    *  repeatedly following the edge to parent, starting from t, as long as the
@@ -402,7 +420,7 @@ protected:
    * @brief Given a node t, rotate right link of t to left, and return the new
    *   root with the parent link fixed up.
    */
-  static Nodeptr rotate_left_with_fixup (Nodepref t) {
+  static Nodeptr rotate_left_with_fixup (Nodeptr t) {
     Nodeptr p      = Parent(t);
     bool    p_nil  = Isnil(p);
     bool    t_left = !p_nil && (Left(p) == t);
@@ -420,7 +438,7 @@ protected:
    * @brief Given a node t, rotate left link of t to right, and return the new
    *   root with the parent link fixed up.
    */
-  static Nodeptr rotate_right_with_fixup (Nodepref t) {
+  static Nodeptr rotate_right_with_fixup (Nodeptr t) {
     Nodeptr p      = Parent(t);
     bool    p_nil  = Isnil(p);
     bool    t_left = !p_nil && (Left(p) == t);
@@ -487,19 +505,19 @@ protected:
         bool x_left  = (x == Left(p1)); // x is a left child
 
         if (x_left && p1_left) { // zag-zag
-          rotate_right_with_fixup(p2);
+          p2 = rotate_right_with_fixup(p2);
         } else if (!x_left && !p1_left) { // zig-zig
-          rotate_left_with_fixup(p2);
+          p2 = rotate_left_with_fixup(p2);
         } else if (x_left) { // zig-zag
           // !p1_left
           Right(p2)         = rotate_right(Right(p2));
           Parent(Right(p2)) = p2;
-          rotate_left_with_fixup(p2);
+          p2 = rotate_left_with_fixup(p2);
         } else { // zag-zig
           // !x_left && p1_left
           Left(p2)         = rotate_left(Left(p2));
           Parent(Left(p2)) = p2;
-          rotate_right_with_fixup(p2);
+          p2 = rotate_right_with_fixup(p2);
         }
 
         if (Isnil(Parent(p2))) t = p2;
@@ -512,8 +530,8 @@ protected:
 
   /**
    * @brief Given a node t, and a key, delete the node with the given key from
-   *  the subtree rooted at t, and return (t, excised) where t is the new
-   *  subtree after deletion, and excised is the deleted node.
+   *  the tree rooted at t, and return (t, excised) where t is the new root
+   *  after deletion, and excised is the deleted node.
    */
   static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const Key& key) {
     Nodeptr x, px;
@@ -538,69 +556,75 @@ protected:
       swap_payload(*x, *pre);
       std::tie(x, px, excised) = excise(pre);
     }
-    // x0 == excised
-    // !Isnil(x0)
+    // excised == x0
+    // !Isnil(excised)
 
     if (IsRed(excised.get()) || IsRed(x)) { // conformal to property 1)
       if (!Isnil(x)) Color_(x) = Color::BLACK;
-      return {Isnil(px) ? x : t, excised.release()};
+      return {Isnil(px) ? x : t,
+              excised.release()};
     }
-
-    // !IsRed(x0)
+    // !IsRed(x0) && !IsRed(x)
+    // rank(x) + 2 == rank(px)
 
     // Invariant:
     //    !Isnil(x) ⇒ (px == Parent(x))
     //    !Isnil(x0)
+    auto YSibling = [] (Nodeptr x, Nodeptr px) -> Nodeptr {
+      return !Isnil(x) ? Sibling(x) :
+             !Isnil(Left(px)) ? Left(px) : Right(px);
+    };
+
     while (!Isnil(px)) {
-      // violating property 1)
-      Nodeptr y = !Isnil(x) ? Sibling(x) :
-                  !Isnil(Left(px)) ? Left(px) : Right(px);
+      // Property 1) is violated.
+      Nodeptr y = YSibling(x, px);
       // !Isnil(px) && !Isnil(x0) && !IsRed(x0) ⇒ !Isnil(y)
       assert(!Isnil(y));
 
-      if (IsRed(y)) {
-        if (IsLeft(y))
-          rotate_right_with_fixup(px);
-        else
-          rotate_left_with_fixup(px);
-      } else if (!IsRed(Left(y)) && !IsRed(Right(y))) {
+      if (IsRed(y)) { // Case 2
+        if (IsLeft(y)) rotate_right_with_fixup(px);
+        else rotate_left_with_fixup(px);
+        y = YSibling(x, px);
+      }
+      assert(!IsRed(y));
+      // Case 1
+      if (!IsRed(Left(y)) && !IsRed(Right(y))) { // Case 1a
 
-        // Demote Parent(x).
+        // Demote px.
         // Don't flip Color_(x).
         Color_(y)  = flip(Color_(y));
         Color_(px) = flip(Color_(px));
+        assert(IsRed(y));
 
         x = px, px = Parent(x);
         // x0 := x
-
-        assert(IsRed(y));
         if (!IsRed(x)) break;
       } else if (IsRight(y)) { // IsLeft(x)
         if (IsRed(Right(y))) {
-          // Case 1.1b
-          rotate_left_with_fixup(px);
+          // Case 1b
+          px = rotate_left_with_fixup(px);
           assert(IsRed(Right(px)));
           Color_(Right(px)) = Color::BLACK;
           break;
         } else {
-          // Case 1.1c
+          // Case 1c
           Right(px) = rotate_right(Right(px));
-          rotate_left_with_fixup(px);
+          px = rotate_left_with_fixup(px);
           assert(IsRed(Right(px)));
           Color_(Right(px)) = Color::BLACK;
           break;
         }
       } else {
         if (IsRed(Left(y))) {
-          // Case 1.1b
-          rotate_right_with_fixup(px);
+          // Case 1b
+          px = rotate_right_with_fixup(px);
           assert(IsRed(Left(px)));
           Color_(Left(px)) = Color::BLACK;
           break;
         } else {
-          // Case 1.1c
+          // Case 1c
           Left(px) = rotate_left(Left(px));
-          rotate_right_with_fixup(px);
+          px = rotate_right_with_fixup(px);
           assert(IsRed(Left(px)));
           Color_(Left(px)) = Color::BLACK;
           break;
@@ -608,9 +632,8 @@ protected:
       }
     }
 
-    auto ret = Isnil(px) ? x :
-               Isnil(Parent(px)) ? px : t;
-    return {ret, excised.release()};
+    return {Isnil(px) ? x : topmost(px),
+            excised.release()};
   }
 
   static void tarjan_promote (Nodeptr t) {
