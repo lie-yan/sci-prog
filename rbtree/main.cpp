@@ -18,58 +18,57 @@ void print_tree (const RBTree& p) {
   std::cout << p.string_rep() << std::endl;
 }
 
-void print_vector (const std::vector<int>& v) {
+void print_vector (const std::vector<std::pair<int, int>>& v) {
   for (auto x: v) {
-    printf("%d, ", x);
+    printf("{%d,%d}, ", x.first, x.second);
   }
   printf("\n");
 }
 
 void test () {
-  auto p = std::make_unique<RBTree>();
   std::random_device              rd;
   std::mt19937                    g(rd());
-  std::uniform_int_distribution<> dist1(1, 30);
-  std::uniform_int_distribution<> dist2(1, 8000);
+  std::uniform_int_distribution<> dist1(1, 100);
+  std::uniform_int_distribution<> dist2(1, 800);
 
-  std::vector<int> v;
+  std::vector<std::pair<std::pair<int, int>, int>> v;
 
   int count = dist1(g);
   v.clear();
   for (int i = 0; i < count; ++i) {
-    v.push_back(dist2(g));
+    int x = dist2(g);
+    v.emplace_back(std::pair{x, 0}, 0);
+    v.emplace_back(std::pair{x, 1}, 0);
   }
 
   std::sort(v.begin(), v.end());
   auto last = std::unique(v.begin(), v.end());
   v.erase(last, v.end());
-  std::shuffle(v.begin(), v.end(), g);
-  print_vector(v);
 
-  for (auto x: v) {
-    printf("x = %2d: ", x);
-    p->insert(x, 0);
-    print_sequence(*p);
-    std::cout << "\n";
+  for (int i = 0; i < count; ++i) {
+    int m = dist2(g);
+    int n = dist2(g);
+
+    if (m == n) n++;
+    if (m > n) std::swap(m, n);
+    assert(m < n);
+
+    v[2 * i].second     = m;
+    v[2 * i + 1].second = n;
   }
 
-  //  std::cout << p->lower_bound(6)->key << std::endl;
-  //  std::cout << p->lower_bound(7)->key << std::endl;
-  std::cout << p->min()->key << std::endl;
-  std::cout << p->max()->key << std::endl;
+  std::sort(v.begin(), v.end(), [] (const auto& x, const auto& y) {
+    return x.second < y.second;
+  });
 
-  print_sequence(*p);
-  std::cout << "\n";
+  auto p = std::make_unique<RBTree>();
 
-  std::shuffle(v.begin(), v.end(), g);
+  for (const auto& x : v) {
+    if (x.first.second == 0) p->insert(x.first.first, 0);
+    else p->erase(x.first.first);
 
-  //  v = {3, 10, 7, 1, 4, 9, 6, 8, 2, 5,};
-  print_vector(v);
-  for (auto x: v) {
-    printf("x = %2d: ", x);
-    p->erase(x);
     print_sequence(*p);
-    std::cout << "\n";
+    printf("\n");
   }
 }
 
