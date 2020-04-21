@@ -581,8 +581,8 @@ protected:
       Nodeptr y = YSibling(x, px);
       // !Isnil(px) && !Isnil(x0) && !IsRed(x0) ⇒ !Isnil(y)
       //    Case 1) x0 is equal to excised which is black.
-      //    Case 2) x0 is as set in the loop body. Note that the negation of
-      //    no_violation implies !IsRed(x0).
+      //    Case 2) x0 is as set in the loop body. Note that 
+      //      ¬no_violation ⇔ !IsRed(x0).
       assert(!Isnil(y));
 
       if (IsRed(y)) { // Case 2
