@@ -708,3 +708,8 @@ protected:
 private:
   Nodeptr root_;
 };
+
+// TODO:
+//   1) is_bst
+//   2) is_23
+//   3) is_balanced
