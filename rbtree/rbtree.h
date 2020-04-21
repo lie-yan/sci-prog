@@ -605,29 +605,25 @@ protected:
         if (IsRed(Right(y))) {
           // Case 1b
           px = rotate_left_with_fixup(px);
-          assert(IsRed(Right(px)));
-          Color_(Right(px)) = Color::BLACK;
         } else {
           // Case 1c
           Right(px) = rotate_right(Right(px));
           px = rotate_left_with_fixup(px);
-          assert(IsRed(Right(px)));
-          Color_(Right(px)) = Color::BLACK;
         }
+        assert(IsRed(Right(px)));
+        Color_(Right(px)) = Color::BLACK;
         break;
       } else {
         if (IsRed(Left(y))) {
           // Case 1b
           px = rotate_right_with_fixup(px);
-          assert(IsRed(Left(px)));
-          Color_(Left(px)) = Color::BLACK;
         } else {
           // Case 1c
           Left(px) = rotate_left(Left(px));
           px = rotate_right_with_fixup(px);
-          assert(IsRed(Left(px)));
-          Color_(Left(px)) = Color::BLACK;
         }
+        assert(IsRed(Left(px)));
+        Color_(Left(px)) = Color::BLACK;
         break;
       }
     }
