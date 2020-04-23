@@ -89,7 +89,8 @@ public:
    *  If no such node exists, return null.
    */
   [[nodiscard]] Nodeptr lower_bound (const key_type& key) const {
-    auto[u, p]= std::pair(Nodeptr(nullptr), root_);
+    Nodeptr u, p;
+    std::tie(u, p) = std::pair(Nodeptr(nullptr), root_);
     // Let P be the set of nodes that have been compared with the given key.
     // Let P' be { x ∈ P | x.key ≤ key }.
     // Invariant:
@@ -131,7 +132,8 @@ public:
       return Parent(t);
     } else { // no left subtree ∧ be left child
       // !Isnil(Parent(t))
-      auto[u, pu] = ascend_rightward(Parent(t));
+      Nodeptr u, pu;
+      std::tie(u, pu) = ascend_rightward(Parent(t));
       // Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
       return pu;
     }
@@ -160,7 +162,8 @@ public:
     } else { // no right subtree ∧ be right child
 
       // !Isnil(Parent(t))
-      auto[u, pu] = ascend_leftward(Parent(t));
+      Nodeptr u, pu;
+      std::tie(u, pu) = ascend_leftward(Parent(t));
       // Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
       return pu;
     }
@@ -246,7 +249,8 @@ protected:
    *    checked before return.
    */
   static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const key_type& key) {
-    auto[p, tp]= std::pair(t, Nodeptr(nullptr));
+    Nodeptr p, tp;
+    std::tie(p, tp) = std::pair(t, Nodeptr(nullptr));
     while (p) {
       if (int cmp = key_cmp(key, Key(p)); cmp < 0)
         tp = p, p = Left(p);
@@ -266,8 +270,9 @@ protected:
   static Nodeptr leftmost (Nodeptr t) {
     if (Isnil(t)) return nullptr;
 
-    // t != nullptr
-    auto[tp, p] = std::pair(t, Left(t));
+    // !Isnil(t)
+    Nodeptr tp, p;
+    std::tie(tp, p) = std::pair(t, Left(t));
     while (!Isnil(p)) {
       tp = p, p = Left(p);
     }
@@ -283,8 +288,9 @@ protected:
   static Nodeptr rightmost (Nodeptr t) {
     if (Isnil(t)) return nullptr;
 
-    // t != nullptr
-    auto[tp, p] = std::pair(t, Right(t));
+    // !Isnil(t)
+    Nodeptr tp, p;
+    std::tie(tp, p) = std::pair(t, Right(t));
     while (!Isnil(p)) {
       tp = p, p = Right(p);
     }
@@ -292,7 +298,8 @@ protected:
   }
 
   static Nodeptr topmost (Nodeptr t) {
-    auto[tp, p] = std::pair(Nodeptr(nullptr), t);
+    Nodeptr tp, p;
+    std::tie(tp, p) = std::pair(Nodeptr(nullptr), t);
     while (!Isnil(p)) {
       tp = p, p = Parent(p);
     }
@@ -308,13 +315,14 @@ protected:
    *    1) the parent of u, if u is the right child of its parent;
    *    2) null, otherwise.
    *
-   * @pre t != nullptr
+   * @pre !Isnil(t)
    * @post Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
    */
   static std::pair<Nodeptr, Nodeptr> ascend_rightward (Nodeptr t) {
     assert(!Isnil(t));
 
-    auto[u, pu] = std::pair(t, Parent(t));
+    Nodeptr u, pu;
+    std::tie(u, pu) = std::pair(t, Parent(t));
     while (!Isnil(pu) && u == Left(pu)) {
       u = pu, pu = Parent(pu);
     }
@@ -331,13 +339,14 @@ protected:
    *    1) the parent of u, if u is the left child of its parent;
    *    2) null, otherwise.
    *
-   * @pre   t != nullptr
+   * @pre   !Isnil(t)
    * @post  Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
    */
   static std::pair<Nodeptr, Nodeptr> ascend_leftward (Nodeptr t) {
     assert(!Isnil(t));
 
-    auto[u, pu] = std::pair(t, Parent(t));
+    Nodeptr u, pu;
+    std::tie(u, pu) = std::pair(t, Parent(t));
     while (!Isnil(pu) && u == Right(pu)) {
       u = pu, pu = Parent(pu);
     }
@@ -358,7 +367,7 @@ protected:
     assert(t && Right(t));
 
     auto x = Right(t);
-    // x != nullptr
+    // !Isnil(x)
     Right(t) = Left(x), Left(x) = t;
     std::swap(Color(x), Color(t));
     if (Right(t)) Parent(Right(t)) = t;
@@ -380,7 +389,7 @@ protected:
     assert(t && Left(t));
 
     auto x = Left(t);
-    // x != nullptr
+    // !Isnil(x)
     Left(t) = Right(x), Right(x) = t;
     std::swap(Color(x), Color(t));
     if (Left(t)) Parent(Left(t)) = t;
