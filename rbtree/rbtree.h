@@ -429,8 +429,8 @@ protected:
    * @post The new root is hung under the old parent of t.
    */
   static Nodeptr tarjan_insert (Nodeptr t, key_type key, value_type value) {
-
-    auto[x, px] = find(t, key);
+    Nodeptr x, px;
+    std::tie(x, px) = find(t, key);
 
     // Cases:
     //  1) found
