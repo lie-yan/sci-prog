@@ -35,7 +35,6 @@ class RBTree {
 public:
   using key_type = int;
   using value_type = int;
-
   using Keyref = key_type&;
   using Vref = value_type&;
 
@@ -43,8 +42,11 @@ public:
     BLACK = 0,
     RED,
   };
-
   using Colorref = color_type&;
+
+  struct Node;
+  using Nodeptr = Node*;
+  using Nodepref = Nodeptr&;
 
   struct Node {
     color_type color;
@@ -68,9 +70,6 @@ public:
     }
   };
 
-  using Nodeptr = Node*;
-  using Nodepref = Nodeptr&;
-
   ~RBTree () { destroy(root_); }
 
   [[nodiscard]] bool is_empty () const { return Isnil(root_); }
@@ -81,23 +80,6 @@ public:
 
   [[nodiscard]] std::string string_rep () const {
     return string_rep(root_);
-  }
-
-  static std::string string_rep (Nodeptr t) {
-
-    auto key_rep = [] (Nodeptr t) -> std::string {
-      return std::to_string(Key(t)) + (IsRed(t) ? "R" : "B");
-    };
-
-    if (Isnil(t)) {
-      return ".";
-    } else if (IsLeaf(t)) {
-      return key_rep(t);
-    } else {
-      std::string left  = string_rep(Left(t)) + " ";
-      std::string right = " " + string_rep(Right(t));
-      return "(" + left + key_rep(t) + right + ")";
-    }
   }
 
   /**
@@ -247,7 +229,7 @@ protected:
   /**
    * @brief Given a node t, return whether the link pointing to its parent
    *  is red.
-   * @note  IsRed(t) ⇒ (t != nullptr)
+   * @note  IsRed(t) ⇒ !Isnil(t)
    */
   static bool IsRed (Nodeptr t) {
     if (Isnil(t)) return false;
@@ -444,15 +426,6 @@ protected:
   }
 
   /**
-   * @brief Given a node t, flip the colors of itself and its two children.
-   */
-  static void flip_colors (Nodeptr t) {
-    Color(t)        = flip(Color(t));
-    Color(Left(t))  = flip(Color(Left(t)));
-    Color(Right(t)) = flip(Color(Right(t)));
-  }
-
-  /**
    * @post The new root is hung under the old parent of t.
    */
   static Nodeptr tarjan_insert (Nodeptr t, key_type key, value_type value) {
@@ -621,8 +594,18 @@ protected:
             excised.release()};
   }
 
+  /**
+   * @brief Given a node t, promote its rank by one.
+   */
   static void tarjan_promote (Nodeptr t) {
     assert(t && !IsRed(t) && IsRed(Left(t)) && IsRed(Right(t)));
+
+    auto flip_colors = [] (Nodeptr t) -> void {
+      Color(t)        = flip(Color(t));
+      Color(Left(t))  = flip(Color(Left(t)));
+      Color(Right(t)) = flip(Color(Right(t)));
+    };
+
     flip_colors(t);
   }
 
@@ -646,9 +629,9 @@ protected:
   }
 
   /**
-   * @brief Given a node x with at most one child, replace x with its child and
-   *    return (new_x, px, old_x) which are the new x, the parent of x, and
-   *    the old x.
+   * @brief Given a node x with at most one child, connect x's parent with x's
+   *    child, cut x out, and return (new_x, px, old_x) which are the new x, the
+   *    parent of x, and the old x.
    * @pre x has at most one child.
    */
   static std::tuple<Nodeptr, Nodeptr, Nodeptr> excise (Nodeptr x) {
@@ -679,12 +662,23 @@ protected:
     }
   }
 
+  /**
+   * @brief Given two keys lhs and rhs, return the comparison result.
+   *
+   *  -1 if lhs < rhs
+   *  1 if lhs > rhs
+   *  0 if lhs == rhs
+   */
   static int key_cmp (const key_type& lhs, const key_type& rhs) {
     if (lhs < rhs) return -1;
     else if (rhs < lhs) return 1;
     else return 0;
   }
 
+  /**
+   * @brief Given a color c, return the other color different than c, that is,
+   *    return RED for BLACK, and BLACK for RED.
+   */
   static color_type flip (color_type c) {
     switch (c) {
     case color_type::BLACK:
@@ -693,6 +687,23 @@ protected:
       return color_type::BLACK;
     }
   };
+
+  static std::string string_rep (Nodeptr t) {
+
+    auto key_rep = [] (Nodeptr t) -> std::string {
+      return std::to_string(Key(t)) + (IsRed(t) ? "R" : "B");
+    };
+
+    if (Isnil(t)) {
+      return ".";
+    } else if (IsLeaf(t)) {
+      return key_rep(t);
+    } else {
+      std::string left  = string_rep(Left(t)) + " ";
+      std::string right = " " + string_rep(Right(t));
+      return "(" + left + key_rep(t) + right + ")";
+    }
+  }
 
 private:
   Nodeptr root_;
