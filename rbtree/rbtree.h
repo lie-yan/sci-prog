@@ -33,26 +33,31 @@ public:
  */
 class RBTree {
 public:
-  using Key = int;
-  using Value = int;
+  using key_type = int;
+  using value_type = int;
+  using Keyref = key_type&;
+  using Vref = value_type&;
 
-  enum class Color : uint8_t {
+  enum class color_type : uint8_t {
     BLACK = 0,
     RED,
   };
+  using Colorref = color_type&;
 
-  using Colorref = Color&;
+  struct Node;
+  using Nodeptr = Node*;
+  using Nodepref = Nodeptr&;
 
   struct Node {
-    Color color;
+    color_type color;
     Node* parent = nullptr;
     Node* left   = nullptr;
     Node* right  = nullptr;
 
-    Key   key;
-    Value value;
+    key_type   key;
+    value_type value;
 
-    Node (Key key, Value value, Color color)
+    Node (key_type key, value_type value, color_type color)
         : key(key), value(value), color(color) { }
 
     void swap_payload (Node& other) {
@@ -64,9 +69,6 @@ public:
       lhs.swap_payload(rhs);
     }
   };
-
-  using Nodeptr = Node*;
-  using Nodepref = Nodeptr&;
 
   ~RBTree () { destroy(root_); }
 
@@ -80,37 +82,21 @@ public:
     return string_rep(root_);
   }
 
-  static std::string string_rep (Nodeptr t) {
-
-    auto key_rep = [] (Nodeptr t) -> std::string {
-      return std::to_string(t->key) + (IsRed(t) ? "R" : "B");
-    };
-
-    if (Isnil(t)) {
-      return ".";
-    } else if (IsLeaf(t)) {
-      return key_rep(t);
-    } else {
-      std::string left  = string_rep(Left(t)) + " ";
-      std::string right = " " + string_rep(Right(t));
-      return "(" + left + key_rep(t) + right + ")";
-    }
-  }
-
   /**
    * @brief Given a key, return the node corresponding to the greatest key less
    *  than or equal to the given key.
    *
    *  If no such node exists, return null.
    */
-  [[nodiscard]] Nodeptr lower_bound (const Key& key) const {
-    auto[u, p]= std::pair(Nodeptr(nullptr), root_);
+  [[nodiscard]] Nodeptr lower_bound (const key_type& key) const {
+    Nodeptr u, p;
+    std::tie(u, p) = std::pair(Nodeptr(nullptr), root_);
     // Let P be the set of nodes that have been compared with the given key.
     // Let P' be { x ∈ P | x.key ≤ key }.
     // Invariant:
     //    Q(u): u is the node in P' with the maximum key.
     while (p) {
-      if (int cmp = key_cmp(key, p->key); cmp < 0)
+      if (int cmp = key_cmp(key, Key(p)); cmp < 0)
         p = Left(p);
       else if (cmp > 0)
         u = p, p = Right(p);
@@ -146,7 +132,8 @@ public:
       return Parent(t);
     } else { // no left subtree ∧ be left child
       // !Isnil(Parent(t))
-      auto[u, pu] = ascend_rightward(Parent(t));
+      Nodeptr u, pu;
+      std::tie(u, pu) = ascend_rightward(Parent(t));
       // Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
       return pu;
     }
@@ -175,7 +162,8 @@ public:
     } else { // no right subtree ∧ be right child
 
       // !Isnil(Parent(t))
-      auto[u, pu] = ascend_leftward(Parent(t));
+      Nodeptr u, pu;
+      std::tie(u, pu) = ascend_leftward(Parent(t));
       // Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
       return pu;
     }
@@ -186,16 +174,16 @@ public:
    *
    *  If key already exists in the search tree, replace the value.
    */
-  void insert (Key key, Value value) {
+  void insert (key_type key, value_type value) {
     root_ = tarjan_insert(root_, key, value);
     Parent(root_) = nullptr;
-    Color_(root_) = Color::BLACK;
+    Color(root_)  = color_type::BLACK;
   }
 
   /**
    * @brief Given a key, delete the node with the given key if any.
    */
-  void erase (Key key) {
+  void erase (key_type key) {
     assert(!Isnil(root_));
     Nodeptr excised;
     std::tie(root_, excised) = tarjan_delete(root_, key);
@@ -205,48 +193,34 @@ public:
       delete excised;
       if (!Isnil(root_)) {
         Parent(root_) = nullptr;
-        Color_(root_) = Color::BLACK;
+        Color(root_)  = color_type::BLACK;
       }
     }
   }
 
 protected:
 
-  static bool Isnil (Nodeptr x) {
-    return x == nullptr;
-  }
+  static bool Isnil (Nodeptr x) { return x == nullptr; }
 
-  static bool IsLeft (Nodeptr x) {
-    return Left(Parent(x)) == x;
-  }
+  static bool IsLeft (Nodeptr x) { return Left(Parent(x)) == x; }
 
-  static bool IsRight (Nodeptr x) {
-    return Right(Parent(x)) == x;
-  }
+  static bool IsRight (Nodeptr x) { return Right(Parent(x)) == x; }
 
-  static bool IsLeaf (Nodeptr x) {
-    return Isnil(Left(x)) && Isnil(Right(x));
-  }
+  static bool IsLeaf (Nodeptr x) { return Isnil(Left(x)) && Isnil(Right(x)); }
 
-  static Colorref Color_ (Nodeptr x) {
-    return (*x).color;
-  }
+  static Colorref Color (Nodeptr x) { return (*x).color; }
 
-  static Nodepref Parent (Nodeptr x) {
-    return (*x).parent;
-  }
+  static Keyref Key (Nodeptr x) { return (*x).key; }
 
-  static Nodepref Left (Nodeptr x) {
-    return (*x).left;
-  }
+  static Vref Value (Nodeptr x) { return (*x).value; }
 
-  static Nodepref Right (Nodeptr x) {
-    return (*x).right;
-  }
+  static Nodepref Parent (Nodeptr x) { return (*x).parent; }
 
-  static Nodepref Grandparent (Nodeptr x) {
-    return Parent(Parent(x));
-  }
+  static Nodepref Left (Nodeptr x) { return (*x).left; }
+
+  static Nodepref Right (Nodeptr x) { return (*x).right; }
+
+  static Nodepref Grandparent (Nodeptr x) { return Parent(Parent(x)); }
 
   static Nodepref Sibling (Nodeptr x) {
     if (IsLeft(x))
@@ -258,11 +232,11 @@ protected:
   /**
    * @brief Given a node t, return whether the link pointing to its parent
    *  is red.
-   * @note  IsRed(t) ⇒ (t != nullptr)
+   * @note  IsRed(t) ⇒ !Isnil(t)
    */
   static bool IsRed (Nodeptr t) {
     if (Isnil(t)) return false;
-    else return Color_(t) == Color::RED;
+    else return Color(t) == color_type::RED;
   }
 
   /**
@@ -274,10 +248,11 @@ protected:
    *    If no such p is found, return (null, tp0) where tp0 is the last node
    *    checked before return.
    */
-  static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const Key& key) {
-    auto[p, tp]= std::pair(t, Nodeptr(nullptr));
+  static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const key_type& key) {
+    Nodeptr p, tp;
+    std::tie(p, tp) = std::pair(t, Nodeptr(nullptr));
     while (p) {
-      if (int cmp = key_cmp(key, p->key); cmp < 0)
+      if (int cmp = key_cmp(key, Key(p)); cmp < 0)
         tp = p, p = Left(p);
       else if (cmp > 0)
         tp = p, p = Right(p);
@@ -295,8 +270,9 @@ protected:
   static Nodeptr leftmost (Nodeptr t) {
     if (Isnil(t)) return nullptr;
 
-    // t != nullptr
-    auto[tp, p] = std::pair(t, Left(t));
+    // !Isnil(t)
+    Nodeptr tp, p;
+    std::tie(tp, p) = std::pair(t, Left(t));
     while (!Isnil(p)) {
       tp = p, p = Left(p);
     }
@@ -312,8 +288,9 @@ protected:
   static Nodeptr rightmost (Nodeptr t) {
     if (Isnil(t)) return nullptr;
 
-    // t != nullptr
-    auto[tp, p] = std::pair(t, Right(t));
+    // !Isnil(t)
+    Nodeptr tp, p;
+    std::tie(tp, p) = std::pair(t, Right(t));
     while (!Isnil(p)) {
       tp = p, p = Right(p);
     }
@@ -321,7 +298,8 @@ protected:
   }
 
   static Nodeptr topmost (Nodeptr t) {
-    auto[tp, p] = std::pair(Nodeptr(nullptr), t);
+    Nodeptr tp, p;
+    std::tie(tp, p) = std::pair(Nodeptr(nullptr), t);
     while (!Isnil(p)) {
       tp = p, p = Parent(p);
     }
@@ -337,13 +315,14 @@ protected:
    *    1) the parent of u, if u is the right child of its parent;
    *    2) null, otherwise.
    *
-   * @pre t != nullptr
+   * @pre !Isnil(t)
    * @post Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
    */
   static std::pair<Nodeptr, Nodeptr> ascend_rightward (Nodeptr t) {
     assert(!Isnil(t));
 
-    auto[u, pu] = std::pair(t, Parent(t));
+    Nodeptr u, pu;
+    std::tie(u, pu) = std::pair(t, Parent(t));
     while (!Isnil(pu) && u == Left(pu)) {
       u = pu, pu = Parent(pu);
     }
@@ -360,13 +339,14 @@ protected:
    *    1) the parent of u, if u is the left child of its parent;
    *    2) null, otherwise.
    *
-   * @pre   t != nullptr
+   * @pre   !Isnil(t)
    * @post  Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
    */
   static std::pair<Nodeptr, Nodeptr> ascend_leftward (Nodeptr t) {
     assert(!Isnil(t));
 
-    auto[u, pu] = std::pair(t, Parent(t));
+    Nodeptr u, pu;
+    std::tie(u, pu) = std::pair(t, Parent(t));
     while (!Isnil(pu) && u == Right(pu)) {
       u = pu, pu = Parent(pu);
     }
@@ -387,9 +367,9 @@ protected:
     assert(t && Right(t));
 
     auto x = Right(t);
-    // x != nullptr
+    // !Isnil(x)
     Right(t) = Left(x), Left(x) = t;
-    std::swap(Color_(x), Color_(t));
+    std::swap(Color(x), Color(t));
     if (Right(t)) Parent(Right(t)) = t;
     Parent(t) = x;
 
@@ -409,9 +389,9 @@ protected:
     assert(t && Left(t));
 
     auto x = Left(t);
-    // x != nullptr
+    // !Isnil(x)
     Left(t) = Right(x), Right(x) = t;
-    std::swap(Color_(x), Color_(t));
+    std::swap(Color(x), Color(t));
     if (Left(t)) Parent(Left(t)) = t;
     Parent(t) = x;
 
@@ -455,20 +435,11 @@ protected:
   }
 
   /**
-   * @brief Given a node t, flip the colors of itself and its two children.
-   */
-  static void flip_colors (Nodeptr t) {
-    Color_(t)        = flip(Color_(t));
-    Color_(Left(t))  = flip(Color_(Left(t)));
-    Color_(Right(t)) = flip(Color_(Right(t)));
-  }
-
-  /**
    * @post The new root is hung under the old parent of t.
    */
-  static Nodeptr tarjan_insert (Nodeptr t, Key key, Value value) {
-
-    auto[x, px] = find(t, key);
+  static Nodeptr tarjan_insert (Nodeptr t, key_type key, value_type value) {
+    Nodeptr x, px;
+    std::tie(x, px) = find(t, key);
 
     // Cases:
     //  1) found
@@ -476,15 +447,15 @@ protected:
     //  3) nonempty tree and not found
 
     if (!Isnil(x)) { // Case 1)
-      x->value = value;
+      Value(x) = value;
       return t;
     } else if (Isnil(px)) { // Case 2)
       assert(Isnil(t));
-      return new Node(key, value, Color::RED);
+      return new Node(key, value, color_type::RED);
     }
 
     // Case 3)
-    x = new Node(key, value, Color::RED);
+    x = new Node(key, value, color_type::RED);
     attach(x, px);
 
     while (true) {
@@ -535,7 +506,7 @@ protected:
    *  the tree rooted at t, and return (t, excised) where t is the new root
    *  after deletion, and excised is the deleted node.
    */
-  static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const Key& key) {
+  static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const key_type& key) {
     Nodeptr x, px;
     std::tie(x, px) = find(t, key);
     // Invariant:
@@ -561,7 +532,7 @@ protected:
     assert(!Isnil(excised.get()));
 
     if (IsRed(excised.get()) || IsRed(x)) { // conformal to property 1)
-      if (!Isnil(x)) Color_(x) = Color::BLACK;
+      if (!Isnil(x)) Color(x) = color_type::BLACK;
       return {Isnil(px) ? x : t,
               excised.release()};
     }
@@ -581,8 +552,8 @@ protected:
       Nodeptr y = YSibling(x, px);
       // !Isnil(px) && !Isnil(x0) && !IsRed(x0) ⇒ !Isnil(y)
       //    Case 1) x0 is equal to excised which is black.
-      //    Case 2) x0 is as set in the loop body. Note that the negation of
-      //    no_violation implies !IsRed(x0).
+      //    Case 2) x0 is as set in the loop body. Note that 
+      //      ¬no_violation ⇔ !IsRed(x0).
       assert(!Isnil(y));
 
       if (IsRed(y)) { // Case 2
@@ -596,8 +567,8 @@ protected:
         bool no_violation = IsRed(px);
         // x0 := px
         { // Demote px.
-          Color_(px) = Color::BLACK;
-          Color_(y)  = Color::RED;
+          Color(px) = color_type::BLACK;
+          Color(y)  = color_type::RED;
         }
         x = px, px = Parent(x);
         if (no_violation) break;
@@ -605,29 +576,25 @@ protected:
         if (IsRed(Right(y))) {
           // Case 1b
           px = rotate_left_with_fixup(px);
-          assert(IsRed(Right(px)));
-          Color_(Right(px)) = Color::BLACK;
         } else {
           // Case 1c
           Right(px) = rotate_right(Right(px));
           px = rotate_left_with_fixup(px);
-          assert(IsRed(Right(px)));
-          Color_(Right(px)) = Color::BLACK;
         }
+        assert(IsRed(Right(px)));
+        Color(Right(px)) = color_type::BLACK;
         break;
       } else {
         if (IsRed(Left(y))) {
           // Case 1b
           px = rotate_right_with_fixup(px);
-          assert(IsRed(Left(px)));
-          Color_(Left(px)) = Color::BLACK;
         } else {
           // Case 1c
           Left(px) = rotate_left(Left(px));
           px = rotate_right_with_fixup(px);
-          assert(IsRed(Left(px)));
-          Color_(Left(px)) = Color::BLACK;
         }
+        assert(IsRed(Left(px)));
+        Color(Left(px)) = color_type::BLACK;
         break;
       }
     }
@@ -636,8 +603,18 @@ protected:
             excised.release()};
   }
 
+  /**
+   * @brief Given a node t, promote its rank by one.
+   */
   static void tarjan_promote (Nodeptr t) {
     assert(t && !IsRed(t) && IsRed(Left(t)) && IsRed(Right(t)));
+
+    auto flip_colors = [] (Nodeptr t) -> void {
+      Color(t)        = flip(Color(t));
+      Color(Left(t))  = flip(Color(Left(t)));
+      Color(Right(t)) = flip(Color(Right(t)));
+    };
+
     flip_colors(t);
   }
 
@@ -653,7 +630,7 @@ protected:
    * @brief Given node x, node p, attach x under p.
    */
   static void attach (Nodeptr x, Nodeptr p) {
-    if (int cmp = key_cmp(x->key, p->key); cmp < 0) {
+    if (int cmp = key_cmp(Key(x), Key(p)); cmp < 0) {
       Left(p) = x, Parent(x) = p;
     } else {
       Right(p) = x, Parent(x) = p;
@@ -661,9 +638,9 @@ protected:
   }
 
   /**
-   * @brief Given a node x with at most one child, replace x with its child and
-   *    return (new_x, px, old_x) which are the new x, the parent of x, and
-   *    the old x.
+   * @brief Given a node x with at most one child, connect x's parent with x's
+   *    child, cut x out, and return (new_x, px, old_x) which are the new x, the
+   *    parent of x, and the old x.
    * @pre x has at most one child.
    */
   static std::tuple<Nodeptr, Nodeptr, Nodeptr> excise (Nodeptr x) {
@@ -694,21 +671,54 @@ protected:
     }
   }
 
-  static int key_cmp (const Key& lhs, const Key& rhs) {
+  /**
+   * @brief Given two keys lhs and rhs, return the comparison result.
+   *
+   *  -1 if lhs < rhs
+   *  1 if lhs > rhs
+   *  0 if lhs == rhs
+   */
+  static int key_cmp (const key_type& lhs, const key_type& rhs) {
     if (lhs < rhs) return -1;
     else if (rhs < lhs) return 1;
     else return 0;
   }
 
-  static Color flip (Color c) {
+  /**
+   * @brief Given a color c, return the other color different than c, that is,
+   *    return RED for BLACK, and BLACK for RED.
+   */
+  static color_type flip (color_type c) {
     switch (c) {
-    case Color::BLACK:
-      return Color::RED;
-    case Color::RED:
-      return Color::BLACK;
+    case color_type::BLACK:
+      return color_type::RED;
+    case color_type::RED:
+      return color_type::BLACK;
     }
   };
+
+  static std::string string_rep (Nodeptr t) {
+
+    auto key_rep = [] (Nodeptr t) -> std::string {
+      return std::to_string(Key(t)) + (IsRed(t) ? "R" : "B");
+    };
+
+    if (Isnil(t)) {
+      return ".";
+    } else if (IsLeaf(t)) {
+      return key_rep(t);
+    } else {
+      std::string left  = string_rep(Left(t)) + " ";
+      std::string right = " " + string_rep(Right(t));
+      return "(" + left + key_rep(t) + right + ")";
+    }
+  }
 
 private:
   Nodeptr root_;
 };
+
+// TODO:
+//   1) is_bst
+//   2) is_23
+//   3) is_balanced
