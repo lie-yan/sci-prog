@@ -33,26 +33,29 @@ public:
  */
 class RBTree {
 public:
-  using Key = int;
-  using Value = int;
+  using key_type = int;
+  using value_type = int;
 
-  enum class Color : uint8_t {
+  using Keyref = key_type&;
+  using Vref = value_type&;
+
+  enum class color_type : uint8_t {
     BLACK = 0,
     RED,
   };
 
-  using Colorref = Color&;
+  using Colorref = color_type&;
 
   struct Node {
-    Color color;
+    color_type color;
     Node* parent = nullptr;
     Node* left   = nullptr;
     Node* right  = nullptr;
 
-    Key   key;
-    Value value;
+    key_type   key;
+    value_type value;
 
-    Node (Key key, Value value, Color color)
+    Node (key_type key, value_type value, color_type color)
         : key(key), value(value), color(color) { }
 
     void swap_payload (Node& other) {
@@ -83,7 +86,7 @@ public:
   static std::string string_rep (Nodeptr t) {
 
     auto key_rep = [] (Nodeptr t) -> std::string {
-      return std::to_string(t->key) + (IsRed(t) ? "R" : "B");
+      return std::to_string(Key(t)) + (IsRed(t) ? "R" : "B");
     };
 
     if (Isnil(t)) {
@@ -103,14 +106,14 @@ public:
    *
    *  If no such node exists, return null.
    */
-  [[nodiscard]] Nodeptr lower_bound (const Key& key) const {
+  [[nodiscard]] Nodeptr lower_bound (const key_type& key) const {
     auto[u, p]= std::pair(Nodeptr(nullptr), root_);
     // Let P be the set of nodes that have been compared with the given key.
     // Let P' be { x ∈ P | x.key ≤ key }.
     // Invariant:
     //    Q(u): u is the node in P' with the maximum key.
     while (p) {
-      if (int cmp = key_cmp(key, p->key); cmp < 0)
+      if (int cmp = key_cmp(key, Key(p)); cmp < 0)
         p = Left(p);
       else if (cmp > 0)
         u = p, p = Right(p);
@@ -186,16 +189,16 @@ public:
    *
    *  If key already exists in the search tree, replace the value.
    */
-  void insert (Key key, Value value) {
+  void insert (key_type key, value_type value) {
     root_ = tarjan_insert(root_, key, value);
     Parent(root_) = nullptr;
-    Color_(root_) = Color::BLACK;
+    Color(root_)  = color_type::BLACK;
   }
 
   /**
    * @brief Given a key, delete the node with the given key if any.
    */
-  void erase (Key key) {
+  void erase (key_type key) {
     assert(!Isnil(root_));
     Nodeptr excised;
     std::tie(root_, excised) = tarjan_delete(root_, key);
@@ -205,48 +208,34 @@ public:
       delete excised;
       if (!Isnil(root_)) {
         Parent(root_) = nullptr;
-        Color_(root_) = Color::BLACK;
+        Color(root_)  = color_type::BLACK;
       }
     }
   }
 
 protected:
 
-  static bool Isnil (Nodeptr x) {
-    return x == nullptr;
-  }
+  static bool Isnil (Nodeptr x) { return x == nullptr; }
 
-  static bool IsLeft (Nodeptr x) {
-    return Left(Parent(x)) == x;
-  }
+  static bool IsLeft (Nodeptr x) { return Left(Parent(x)) == x; }
 
-  static bool IsRight (Nodeptr x) {
-    return Right(Parent(x)) == x;
-  }
+  static bool IsRight (Nodeptr x) { return Right(Parent(x)) == x; }
 
-  static bool IsLeaf (Nodeptr x) {
-    return Isnil(Left(x)) && Isnil(Right(x));
-  }
+  static bool IsLeaf (Nodeptr x) { return Isnil(Left(x)) && Isnil(Right(x)); }
 
-  static Colorref Color_ (Nodeptr x) {
-    return (*x).color;
-  }
+  static Colorref Color (Nodeptr x) { return (*x).color; }
 
-  static Nodepref Parent (Nodeptr x) {
-    return (*x).parent;
-  }
+  static Keyref Key (Nodeptr x) { return (*x).key; }
 
-  static Nodepref Left (Nodeptr x) {
-    return (*x).left;
-  }
+  static Vref Value (Nodeptr x) { return (*x).value; }
 
-  static Nodepref Right (Nodeptr x) {
-    return (*x).right;
-  }
+  static Nodepref Parent (Nodeptr x) { return (*x).parent; }
 
-  static Nodepref Grandparent (Nodeptr x) {
-    return Parent(Parent(x));
-  }
+  static Nodepref Left (Nodeptr x) { return (*x).left; }
+
+  static Nodepref Right (Nodeptr x) { return (*x).right; }
+
+  static Nodepref Grandparent (Nodeptr x) { return Parent(Parent(x)); }
 
   static Nodepref Sibling (Nodeptr x) {
     if (IsLeft(x))
@@ -262,7 +251,7 @@ protected:
    */
   static bool IsRed (Nodeptr t) {
     if (Isnil(t)) return false;
-    else return Color_(t) == Color::RED;
+    else return Color(t) == color_type::RED;
   }
 
   /**
@@ -274,10 +263,10 @@ protected:
    *    If no such p is found, return (null, tp0) where tp0 is the last node
    *    checked before return.
    */
-  static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const Key& key) {
+  static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const key_type& key) {
     auto[p, tp]= std::pair(t, Nodeptr(nullptr));
     while (p) {
-      if (int cmp = key_cmp(key, p->key); cmp < 0)
+      if (int cmp = key_cmp(key, Key(p)); cmp < 0)
         tp = p, p = Left(p);
       else if (cmp > 0)
         tp = p, p = Right(p);
@@ -389,7 +378,7 @@ protected:
     auto x = Right(t);
     // x != nullptr
     Right(t) = Left(x), Left(x) = t;
-    std::swap(Color_(x), Color_(t));
+    std::swap(Color(x), Color(t));
     if (Right(t)) Parent(Right(t)) = t;
     Parent(t) = x;
 
@@ -411,7 +400,7 @@ protected:
     auto x = Left(t);
     // x != nullptr
     Left(t) = Right(x), Right(x) = t;
-    std::swap(Color_(x), Color_(t));
+    std::swap(Color(x), Color(t));
     if (Left(t)) Parent(Left(t)) = t;
     Parent(t) = x;
 
@@ -458,15 +447,15 @@ protected:
    * @brief Given a node t, flip the colors of itself and its two children.
    */
   static void flip_colors (Nodeptr t) {
-    Color_(t)        = flip(Color_(t));
-    Color_(Left(t))  = flip(Color_(Left(t)));
-    Color_(Right(t)) = flip(Color_(Right(t)));
+    Color(t)        = flip(Color(t));
+    Color(Left(t))  = flip(Color(Left(t)));
+    Color(Right(t)) = flip(Color(Right(t)));
   }
 
   /**
    * @post The new root is hung under the old parent of t.
    */
-  static Nodeptr tarjan_insert (Nodeptr t, Key key, Value value) {
+  static Nodeptr tarjan_insert (Nodeptr t, key_type key, value_type value) {
 
     auto[x, px] = find(t, key);
 
@@ -476,15 +465,15 @@ protected:
     //  3) nonempty tree and not found
 
     if (!Isnil(x)) { // Case 1)
-      x->value = value;
+      Value(x) = value;
       return t;
     } else if (Isnil(px)) { // Case 2)
       assert(Isnil(t));
-      return new Node(key, value, Color::RED);
+      return new Node(key, value, color_type::RED);
     }
 
     // Case 3)
-    x = new Node(key, value, Color::RED);
+    x = new Node(key, value, color_type::RED);
     attach(x, px);
 
     while (true) {
@@ -535,7 +524,7 @@ protected:
    *  the tree rooted at t, and return (t, excised) where t is the new root
    *  after deletion, and excised is the deleted node.
    */
-  static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const Key& key) {
+  static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const key_type& key) {
     Nodeptr x, px;
     std::tie(x, px) = find(t, key);
     // Invariant:
@@ -561,7 +550,7 @@ protected:
     assert(!Isnil(excised.get()));
 
     if (IsRed(excised.get()) || IsRed(x)) { // conformal to property 1)
-      if (!Isnil(x)) Color_(x) = Color::BLACK;
+      if (!Isnil(x)) Color(x) = color_type::BLACK;
       return {Isnil(px) ? x : t,
               excised.release()};
     }
@@ -596,8 +585,8 @@ protected:
         bool no_violation = IsRed(px);
         // x0 := px
         { // Demote px.
-          Color_(px) = Color::BLACK;
-          Color_(y)  = Color::RED;
+          Color(px) = color_type::BLACK;
+          Color(y)  = color_type::RED;
         }
         x = px, px = Parent(x);
         if (no_violation) break;
@@ -611,7 +600,7 @@ protected:
           px = rotate_left_with_fixup(px);
         }
         assert(IsRed(Right(px)));
-        Color_(Right(px)) = Color::BLACK;
+        Color(Right(px)) = color_type::BLACK;
         break;
       } else {
         if (IsRed(Left(y))) {
@@ -623,7 +612,7 @@ protected:
           px = rotate_right_with_fixup(px);
         }
         assert(IsRed(Left(px)));
-        Color_(Left(px)) = Color::BLACK;
+        Color(Left(px)) = color_type::BLACK;
         break;
       }
     }
@@ -649,7 +638,7 @@ protected:
    * @brief Given node x, node p, attach x under p.
    */
   static void attach (Nodeptr x, Nodeptr p) {
-    if (int cmp = key_cmp(x->key, p->key); cmp < 0) {
+    if (int cmp = key_cmp(Key(x), Key(p)); cmp < 0) {
       Left(p) = x, Parent(x) = p;
     } else {
       Right(p) = x, Parent(x) = p;
@@ -690,18 +679,18 @@ protected:
     }
   }
 
-  static int key_cmp (const Key& lhs, const Key& rhs) {
+  static int key_cmp (const key_type& lhs, const key_type& rhs) {
     if (lhs < rhs) return -1;
     else if (rhs < lhs) return 1;
     else return 0;
   }
 
-  static Color flip (Color c) {
+  static color_type flip (color_type c) {
     switch (c) {
-    case Color::BLACK:
-      return Color::RED;
-    case Color::RED:
-      return Color::BLACK;
+    case color_type::BLACK:
+      return color_type::RED;
+    case color_type::RED:
+      return color_type::BLACK;
     }
   };
 
