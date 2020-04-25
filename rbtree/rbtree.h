@@ -10,6 +10,7 @@
 #include <optional>
 #include <iostream>
 #include <tuple>
+#include <sstream>
 
 template <typename T>
 class scoped_ptr : public std::unique_ptr<T> {
@@ -697,20 +698,30 @@ protected:
     }
   };
 
+  /**
+   * Given a node t, return the string representation of t.
+   */
   static std::string string_rep (Nodeptr t) {
+    std::ostringstream oss;
+    string_rep(t, oss);
+    return oss.str();
+  }
 
+  static void string_rep (Nodeptr t, std::ostringstream& oss) {
     auto key_rep = [] (Nodeptr t) -> std::string {
       return std::to_string(Key(t)) + (IsRed(t) ? "R" : "B");
     };
 
     if (Isnil(t)) {
-      return ".";
+      oss << ".";
     } else if (IsLeaf(t)) {
-      return key_rep(t);
+      oss << key_rep(t);
     } else {
-      std::string left  = string_rep(Left(t)) + " ";
-      std::string right = " " + string_rep(Right(t));
-      return "(" + left + key_rep(t) + right + ")";
+      oss << "(";
+      string_rep(Left(t), oss);
+      oss << " " << key_rep(t) << " ";
+      string_rep(Right(t), oss);
+      oss << ")";
     }
   }
 
