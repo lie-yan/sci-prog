@@ -91,7 +91,7 @@ public:
    */
   [[nodiscard]] Nodeptr lower_bound (const key_type& key) const {
     Nodeptr u, p;
-    std::tie(u, p) = std::pair(Nodeptr(nullptr), root_);
+    std::tie(u, p) = std::pair(nullptr, root_);
     // Let P be the set of nodes that have been compared with the given key.
     // Let P' be { x ∈ P | x.key ≤ key }.
     // Invariant:
@@ -251,7 +251,7 @@ protected:
    */
   static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const key_type& key) {
     Nodeptr p, tp;
-    std::tie(p, tp) = std::pair(t, Nodeptr(nullptr));
+    std::tie(p, tp) = std::pair(t, nullptr);
     while (p) {
       if (int cmp = key_cmp(key, Key(p)); cmp < 0)
         tp = p, p = Left(p);
@@ -300,7 +300,7 @@ protected:
 
   static Nodeptr topmost (Nodeptr t) {
     Nodeptr tp, p;
-    std::tie(tp, p) = std::pair(Nodeptr(nullptr), t);
+    std::tie(tp, p) = std::pair(nullptr, t);
     while (!Isnil(p)) {
       tp = p, p = Parent(p);
     }
