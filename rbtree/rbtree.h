@@ -507,8 +507,8 @@ protected:
   }
 
   /**
-   * Given a node t, and a key, delete the node with the given key from the tree
-   * rooted at t, and return (t, excised) where t is the new root after
+   * Given a node t, and a key, delete the node with the given key from the 
+   * tree rooted at t, and return (t, excised) where t is the new root after 
    * deletion, and excised is the deleted node.
    */
   static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const key_type& key) {
