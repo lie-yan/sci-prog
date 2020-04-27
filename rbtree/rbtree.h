@@ -19,18 +19,18 @@ public:
 };
 
 /**
- * @brief A red-black tree.
+ * A red-black tree.
  *
- * @invariant
- *    Tarjan invariant:
+ * A node is black is rank(p(x)) = rank(x) + 1 or p(x) is undefined, and red
+ * if rank(p(x)) = rank(x).
+ *
+ * Tarjan invariant:
  *    1) If x is any node with a parent, rank(x) ≤ rank(p(x)) ≤ rank(x) + 1.
  *    2) If x is any node with a grandparent, rank(x) < rank(p(p(x))).
  *    3) If x is an external node, rank(x) = 0 and rank(p(x)) = 1 if x has
  *       a parent.
- *    Refer to Data Structures and Network Algorithms by Tarjan.
  *
- *    A node is black is rank(p(x)) = rank(x) + 1 or p(x) is undefined,
- *    and red if rank(p(x)) = rank(x).
+ * Reference: Data Structures and Network Algorithms by Tarjan.
  */
 class RBTree {
 public:
@@ -79,15 +79,13 @@ public:
 
   [[nodiscard]] Nodeptr max () const { return rightmost(root_); }
 
-  [[nodiscard]] std::string string_rep () const {
-    return string_rep(root_);
-  }
+  [[nodiscard]] std::string string_rep () const { return string_rep(root_); }
 
   /**
-   * @brief Given a key, return the node corresponding to the greatest key less
-   *  than or equal to the given key.
+   * Given a key, return the node corresponding to the greatest key less than
+   * or equal to the given key.
    *
-   *  If no such node exists, return null.
+   * If no such node exists, return null.
    */
   [[nodiscard]] Nodeptr lower_bound (const key_type& key) const {
     Nodeptr u, p;
@@ -112,10 +110,10 @@ public:
   }
 
   /**
-   * @brief Given a node in the search tree, return its predecessor node.
+   * Given a node in the search tree, return its predecessor node.
    *
-   *  The return value depends on the position of the node in the represented
-   *  sequence.
+   * The return value depends on the position of the node in the represented
+   * sequence.
    *    1) If it is the initial node, return null.
    *    2) Otherwise, return its predecessor.
    *    3) In the case of null node, return the final node of the represented
@@ -141,10 +139,10 @@ public:
   }
 
   /**
-   * @brief Given a node in the search tree, return its successor node.
+   * Given a node in the search tree, return its successor node.
    *
-   *  The return value depends on the position of the node in the represented
-   *  sequence.
+   * The return value depends on the position of the node in the represented
+   * sequence.
    *    1) If it is the final node, return null.
    *    2) Otherwise, return its successor.
    *    3) In the case of null node, return the initial node of the represented
@@ -171,9 +169,9 @@ public:
   }
 
   /**
-   * @brief Given a key and a value, insert (key, value) into the search tree.
+   * Given a key and a value, insert (key, value) into the search tree.
    *
-   *  If key already exists in the search tree, replace the value.
+   * If key already exists in the search tree, replace the value.
    */
   void insert (key_type key, value_type value) {
     root_ = tarjan_insert(root_, key, value);
@@ -182,7 +180,7 @@ public:
   }
 
   /**
-   * @brief Given a key, delete the node with the given key if any.
+   * Given a key, delete the node with the given key if any.
    */
   void erase (key_type key) {
     assert(!Isnil(root_));
@@ -231,8 +229,8 @@ protected:
   }
 
   /**
-   * @brief Given a node t, return whether the link pointing to its parent
-   *  is red.
+   * Given a node t, return whether the link pointing to its parent is red.
+   *
    * @note  IsRed(t) ⇒ !Isnil(t)
    */
   static bool IsRed (Nodeptr t) {
@@ -241,13 +239,13 @@ protected:
   }
 
   /**
-   * @brief Given a node t and a key, return a pair (p, tp) such that p is the
-   *    node with the given key under the subtree rooted at t, and tp (for
-   *    "trailing pointer") is the parent of t.
+   * Given a node t and a key, return a pair (p, tp) such that p is the node
+   * with the given key under the subtree rooted at t, and tp (for "trailing
+   * pointer") is the parent of t.
    *
-   *    If p is the root, return (p, null).
-   *    If no such p is found, return (null, tp0) where tp0 is the last node
-   *    checked before return.
+   * If p is the root, return (p, null).
+   * If no such p is found, return (null, tp0) where tp0 is the last node
+   * checked before return.
    */
   static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const key_type& key) {
     Nodeptr p, tp;
@@ -264,9 +262,9 @@ protected:
   }
 
   /**
-   * @brief Given a node t, return the leftmost node in the subtree rooted at t.
+   * Given a node t, return the leftmost node in the subtree rooted at t.
    *
-   *  In the case of null node, return null.
+   * In the case of null node, return null.
    */
   static Nodeptr leftmost (Nodeptr t) {
     if (Isnil(t)) return nullptr;
@@ -281,10 +279,9 @@ protected:
   }
 
   /**
-   * @brief Given a node t, return the rightmost node in the subtree rooted
-   *  at t.
+   * Given a node t, return the rightmost node in the subtree rooted at t.
    *
-   *  In the case of null node, return null.
+   * In the case of null node, return null.
    */
   static Nodeptr rightmost (Nodeptr t) {
     if (Isnil(t)) return nullptr;
@@ -298,6 +295,9 @@ protected:
     return tp;
   }
 
+  /**
+   * Given a node t, return the furthest ancestor.
+   */
   static Nodeptr topmost (Nodeptr t) {
     Nodeptr tp, p;
     std::tie(tp, p) = std::pair(nullptr, t);
@@ -308,16 +308,16 @@ protected:
   }
 
   /**
-   * @brief Given a node t, return a pair (u, pu) such that u is obtained by
-   *  repeatedly following the edge to parent, starting from t, as long as the
-   *  source is a left child.
+   * Given a node t, return a pair (u, pu) such that u is obtained by repeatedly
+   * following the edge to parent, starting from t, as long as the source is a
+   * left child.
    *
-   *  The value of node pu is
+   * The value of node pu is
    *    1) the parent of u, if u is the right child of its parent;
    *    2) null, otherwise.
    *
-   * @pre !Isnil(t)
-   * @post Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
+   * Pre:   !Isnil(t)
+   * Post:  Isnil(pu) ∨ (!Isnil(pu) ∧ u == Right(pu))
    */
   static std::pair<Nodeptr, Nodeptr> ascend_rightward (Nodeptr t) {
     assert(!Isnil(t));
@@ -332,16 +332,16 @@ protected:
   }
 
   /**
-   * @brief Given a node t, return a pair (u, pu) such that u is obtained by
-   *  repeatedly following the edge to parent, starting from t, as long as the
-   *  source is a right child.
+   * Given a node t, return a pair (u, pu) such that u is obtained by repeatedly
+   * following the edge to parent, starting from t, as long as the source is a
+   * right child.
    *
-   *  The value of node pu is
+   * The value of node pu is
    *    1) the parent of u, if u is the left child of its parent;
    *    2) null, otherwise.
    *
-   * @pre   !Isnil(t)
-   * @post  Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
+   * Pre:   !Isnil(t)
+   * Post:  Isnil(pu) ∨ (!Isnil(pu) ∧ u == Left(pu))
    */
   static std::pair<Nodeptr, Nodeptr> ascend_leftward (Nodeptr t) {
     assert(!Isnil(t));
@@ -356,13 +356,13 @@ protected:
   }
 
   /**
-   * @brief Given a node t, rotate right link to left and return the new root.
+   * Given a node t, rotate right link to left and return the new root.
    *
-   *  The parent links below the new root are well set. The parent link of the
-   *  new root is not.
+   * The parent links below the new root are well set. The parent link of the
+   * new root is not.
    *
-   * @pre t && Right(t)
-   * @invariant rotate_left() preserves invariant 1) and 4).
+   * Pre:   t && Right(t)
+   * Invariant: rotate_left() preserves invariant 1) and 4).
    */
   static Nodeptr rotate_left (Nodeptr t) {
     assert(t && Right(t));
@@ -378,13 +378,13 @@ protected:
   }
 
   /**
-   * @brief Given a node t, rotate left link to right and return the new root.
+   * Given a node t, rotate left link to right and return the new root.
    *
-   *  The parent links below the new root are well set. The parent link of the
-   *  new root is not.
+   * The parent links below the new root are well set. The parent link of the
+   * new root is not.
    *
-   * @pre t && Left(t)
-   * @invariant rotate_right() preserves invariant 1) and 4).
+   * Pre: t && Left(t)
+   * Invariant: rotate_right() preserves invariant 1) and 4).
    */
   static Nodeptr rotate_right (Nodeptr t) {
     assert(t && Left(t));
@@ -400,8 +400,8 @@ protected:
   }
 
   /**
-   * @brief Given a node t, rotate right link of t to left, and return the new
-   *   root with the parent link fixed up.
+   * Given a node t, rotate right link of t to left, and return the new root
+   * with the parent link fixed up.
    */
   static Nodeptr rotate_left_with_fixup (Nodeptr t) {
     Nodeptr p      = Parent(t);
@@ -418,8 +418,8 @@ protected:
   }
 
   /**
-   * @brief Given a node t, rotate left link of t to right, and return the new
-   *   root with the parent link fixed up.
+   * Given a node t, rotate left link of t to right, and return the new root
+   * with the parent link fixed up.
    */
   static Nodeptr rotate_right_with_fixup (Nodeptr t) {
     Nodeptr p      = Parent(t);
@@ -436,7 +436,7 @@ protected:
   }
 
   /**
-   * @post The new root is hung under the old parent of t.
+   * Post:  The new root is hung under the old parent of t.
    */
   static Nodeptr tarjan_insert (Nodeptr t, key_type key, value_type value) {
     Nodeptr x, px;
@@ -503,9 +503,9 @@ protected:
   }
 
   /**
-   * @brief Given a node t, and a key, delete the node with the given key from
-   *  the tree rooted at t, and return (t, excised) where t is the new root
-   *  after deletion, and excised is the deleted node.
+   * Given a node t, and a key, delete the node with the given key from the tree
+   * rooted at t, and return (t, excised) where t is the new root after
+   * deletion, and excised is the deleted node.
    */
   static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const key_type& key) {
     Nodeptr x, px;
@@ -605,22 +605,18 @@ protected:
   }
 
   /**
-   * @brief Given a node t, promote its rank by one.
+   * Given a node t, promote its rank by one.
    */
   static void tarjan_promote (Nodeptr t) {
     assert(t && !IsRed(t) && IsRed(Left(t)) && IsRed(Right(t)));
 
-    auto flip_colors = [] (Nodeptr t) -> void {
-      Color(t)        = flip(Color(t));
-      Color(Left(t))  = flip(Color(Left(t)));
-      Color(Right(t)) = flip(Color(Right(t)));
-    };
-
-    flip_colors(t);
+    Color(t)        = flip(Color(t));
+    Color(Left(t))  = flip(Color(Left(t)));
+    Color(Right(t)) = flip(Color(Right(t)));
   }
 
   /**
-   * @brief Given a node t, set the pointer fields in t to null.
+   * Given a node t, set the pointer fields in t to null.
    */
   static void detach (Nodeptr t) {
     assert(t);
@@ -628,7 +624,7 @@ protected:
   }
 
   /**
-   * @brief Given node x, node p, attach x under p.
+   * Given node x, node p, attach x under p.
    */
   static void attach (Nodeptr x, Nodeptr p) {
     if (int cmp = key_cmp(Key(x), Key(p)); cmp < 0) {
@@ -639,10 +635,11 @@ protected:
   }
 
   /**
-   * @brief Given a node x with at most one child, connect x's parent with x's
-   *    child, cut x out, and return (new_x, px, old_x) which are the new x, the
-   *    parent of x, and the old x.
-   * @pre x has at most one child.
+   * Given a node x with at most one child, connect x's parent with x's child,
+   * cut x out, and return (new_x, px, old_x) which are the new x, the parent
+   * of x, and the old x.
+   *
+   * Pre: x has at most one child.
    */
   static std::tuple<Nodeptr, Nodeptr, Nodeptr> excise (Nodeptr x) {
     assert(!Isnil(x));
@@ -662,7 +659,7 @@ protected:
   };
 
   /**
-   * @brief Given a node t, destroy all the nodes in the subtree rooted at t.
+   * Given a node t, destroy all the nodes in the subtree rooted at t.
    */
   static void destroy (Nodeptr t) {
     if (!Isnil(t)) {
@@ -673,11 +670,10 @@ protected:
   }
 
   /**
-   * @brief Given two keys lhs and rhs, return the comparison result.
-   *
-   *  -1 if lhs < rhs
-   *  1 if lhs > rhs
-   *  0 if lhs == rhs
+   * Given two keys lhs and rhs, return the comparison result:
+   *    -1 if lhs < rhs
+   *    1 if lhs > rhs
+   *    0 if lhs == rhs
    */
   static int key_cmp (const key_type& lhs, const key_type& rhs) {
     if (lhs < rhs) return -1;
@@ -686,8 +682,8 @@ protected:
   }
 
   /**
-   * @brief Given a color c, return the other color different than c, that is,
-   *    return RED for BLACK, and BLACK for RED.
+   * Given a color c, return the other color different than c, that is,
+   * return RED for BLACK, and BLACK for RED.
    */
   static color_type flip (color_type c) {
     switch (c) {
@@ -707,6 +703,10 @@ protected:
     return oss.str();
   }
 
+  /**
+   * Given a node t, and std::ostringstream oss, return the string
+   * representation of t.
+   */
   static void string_rep (Nodeptr t, std::ostringstream& oss) {
     auto key_rep = [] (Nodeptr t) -> std::string {
       return std::to_string(Key(t)) + (IsRed(t) ? "R" : "B");
