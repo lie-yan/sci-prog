@@ -737,9 +737,9 @@ protected:
     if (Isnil(t)) {
       return true;
     } else {
-      bool b1 = Isnil(Left(t)) || ((Key(Left(t)) < Key(t)) && is_bst(Left(t)));
+      bool b1 = Isnil(Left(t)) || (Key(Left(t)) < Key(t) && is_bst(Left(t)));
       if (!b1) return false;
-      bool b2 = Isnil(Right(t)) || ((Key(t) < Key(Right(t))) && is_bst(Right(t)));
+      bool b2 = Isnil(Right(t)) || (Key(t) < Key(Right(t)) && is_bst(Right(t)));
       return b2;
     }
   }
