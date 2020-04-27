@@ -79,10 +79,9 @@ void test () {
     if (x.second == 0) p->insert(x.first, 0);
     else p->erase(x.first);
 
-//    print_sequence(*p);
-
     print_tree(*p);
     printf("\n");
+    assert(p->is_valid());
   }
 }
 

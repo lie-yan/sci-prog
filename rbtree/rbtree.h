@@ -81,6 +81,10 @@ public:
 
   [[nodiscard]] std::string string_rep () const { return string_rep(root_); }
 
+  [[nodiscard]] bool is_valid () const {
+    return is_bst(root_);
+  }
+
   /**
    * Given a key, return the node corresponding to the greatest key less than
    * or equal to the given key.
@@ -231,7 +235,7 @@ protected:
   /**
    * Given a node t, return whether the link pointing to its parent is red.
    *
-   * @note  IsRed(t) ⇒ !Isnil(t)
+   * Note:  IsRed(t) ⇒ !Isnil(t)
    */
   static bool IsRed (Nodeptr t) {
     if (Isnil(t)) return false;
@@ -383,7 +387,7 @@ protected:
    * The parent links below the new root are well set. The parent link of the
    * new root is not.
    *
-   * Pre: t && Left(t)
+   * Pre:   t && Left(t)
    * Invariant: rotate_right() preserves invariant 1) and 4).
    */
   static Nodeptr rotate_right (Nodeptr t) {
@@ -639,7 +643,7 @@ protected:
    * cut x out, and return (new_x, px, old_x) which are the new x, the parent
    * of x, and the old x.
    *
-   * Pre: x has at most one child.
+   * Pre:   x has at most one child.
    */
   static std::tuple<Nodeptr, Nodeptr, Nodeptr> excise (Nodeptr x) {
     assert(!Isnil(x));
@@ -725,11 +729,25 @@ protected:
     }
   }
 
+  /**
+   * Given a node t, return whether the tree rooted at t is a binary search
+   * tree, that is, has symmetric order.
+   */
+  static bool is_bst (Nodeptr t) {
+    if (Isnil(t)) {
+      return true;
+    } else {
+      bool b1 = Isnil(Left(t)) || ((Key(Left(t)) < Key(t)) && is_bst(Left(t)));
+      if (!b1) return false;
+      bool b2 = Isnil(Right(t)) || ((Key(t) < Key(Right(t))) && is_bst(Right(t)));
+      return b2;
+    }
+  }
+
 private:
   Nodeptr root_;
 };
 
 // TODO:
-//   1) is_bst
 //   2) is_23
 //   3) is_balanced
