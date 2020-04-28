@@ -366,7 +366,8 @@ protected:
    * new root is not.
    *
    * Pre:   t && Right(t)
-   * Invariant: rotate_left() preserves invariant 1) and 4).
+   * Invariant: 
+   *    rotate_left() preserves symmetric order and perfect black balance.
    */
   static Nodeptr rotate_left (Nodeptr t) {
     assert(t && Right(t));
@@ -388,7 +389,8 @@ protected:
    * new root is not.
    *
    * Pre:   t && Left(t)
-   * Invariant: rotate_right() preserves invariant 1) and 4).
+   * Invariant: 
+   *    rotate_right() preserves symmetric order and perfect black balance.
    */
   static Nodeptr rotate_right (Nodeptr t) {
     assert(t && Left(t));
