@@ -80,7 +80,7 @@ public:
   [[nodiscard]] std::string string_rep () const { return string_rep(root_); }
 
   [[nodiscard]] bool is_valid () const {
-    return is_bst(root_);
+    return is_bst(root_) && is_23(root_) && is_balanced(root_);
   }
 
   /**
@@ -744,10 +744,46 @@ protected:
     }
   }
 
+  /**
+   * Given a node t, return whether the tree rooted at t has at most one red
+   * links in a row on any path.
+   */
+  static bool is_23 (Nodeptr t) {
+    if (Isnil(t)) return true;
+    if (IsRed(t) && IsRed(Left(t))) return false;
+    if (IsRed(t) && IsRed(Right(t))) return false;
+    return is_23(Left(t)) && is_23(Right(t));
+  }
+
+  /**
+   * Given a node t, return whether the tree rooted at t is perfect black
+   * balanced.
+   */
+  static bool is_balanced (Nodeptr t) {
+    int black = 0; // count of black links from root to min
+
+    Nodeptr x = t;
+    while (!Isnil(x)) {
+      if (!IsRed(x)) black++;
+      x = Left(x);
+    }
+
+    return is_balanced(t, black);
+  }
+
+  /**
+   * Given a node t, an integer black, return whether every path from t to a
+   * leaf has the given number of black links.
+   */
+  static bool is_balanced (Nodeptr t, int black) {
+    if (Isnil(t)) return black == 0;
+    if (!IsRed(t)) black--;
+    return is_balanced(Left(t), black) && is_balanced(Right(t), black);
+  }
+
 private:
   Nodeptr root_;
 };
 
 // TODO:
-//   2) is_23
 //   3) is_balanced

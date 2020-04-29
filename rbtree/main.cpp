@@ -88,9 +88,9 @@ void test () {
 int main () {
   using namespace std::chrono_literals;
 
-//  while (true) {
+  for (int i = 0; i < 1000; i++) {
     printf("===================\n");
     test();
-    std::this_thread::sleep_for(1ms);
-//  }
+//    std::this_thread::sleep_for(1ms);
+  }
 }
