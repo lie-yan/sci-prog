@@ -785,5 +785,3 @@ private:
   Nodeptr root_;
 };
 
-// TODO:
-//   3) is_balanced
