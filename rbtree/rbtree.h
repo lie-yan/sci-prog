@@ -4,8 +4,6 @@
 
 #pragma once
 
-#define DEBUG 1
-
 #include <cstdint>
 #include <optional>
 #include <iostream>
