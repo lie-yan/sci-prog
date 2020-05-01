@@ -76,8 +76,10 @@ void test () {
   auto p = std::make_unique<RBTree>();
 
   for (const auto& x : v) {
-    if (x.second == 0) p->insert(x.first, 0);
-    else p->erase(x.first);
+    if (x.second == 0)
+      p->insert(x.first, 0);
+    else
+      p->erase(x.first);
 
     print_tree(*p);
     printf("\n");
@@ -91,6 +93,5 @@ int main () {
   for (int i = 0; i < 1000; i++) {
     printf("===================\n");
     test();
-//    std::this_thread::sleep_for(1ms);
   }
 }
