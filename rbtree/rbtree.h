@@ -96,7 +96,7 @@ public:
     // Let P' be { x ∈ P | x.key ≤ key }.
     // Invariant:
     //    Q(u): u is the node in P' with the maximum key.
-    while (p) {
+    while (!Isnil(p)) {
       if (int cmp = key_cmp(key, Key(p)); cmp < 0)
         p = Left(p);
       else if (cmp > 0)
@@ -252,7 +252,7 @@ protected:
   static std::pair<Nodeptr, Nodeptr> find (Nodeptr t, const key_type& key) {
     Nodeptr p, tp;
     std::tie(p, tp) = std::pair(t, nullptr);
-    while (p) {
+    while (!Isnil(p)) {
       if (int cmp = key_cmp(key, Key(p)); cmp < 0)
         tp = p, p = Left(p);
       else if (cmp > 0)
