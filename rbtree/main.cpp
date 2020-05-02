@@ -25,7 +25,8 @@ void print_vector (const std::vector<std::pair<int, int>>& v) {
   printf("\n");
 }
 
-std::vector<std::pair<int, int>> random_update_sequence (int max_count, int max_value) {
+std::vector<std::pair<int, int>> random_update_sequence (int max_count, 
+                                                         int max_value) {
   std::random_device              rd;
   std::mt19937                    g(rd());
   std::uniform_int_distribution<> dist1(1, max_count);
