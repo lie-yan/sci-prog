@@ -19,14 +19,14 @@ public:
 /**
  * A red-black tree.
  *
- * A node is black is rank(p(x)) = rank(x) + 1 or p(x) is undefined, and red
- * if rank(p(x)) = rank(x).
- *
  * Tarjan invariant:
  *    1) If x is any node with a parent, rank(x) ≤ rank(p(x)) ≤ rank(x) + 1.
  *    2) If x is any node with a grandparent, rank(x) < rank(p(p(x))).
  *    3) If x is an external node, rank(x) = 0 and rank(p(x)) = 1 if x has
  *       a parent.
+ *
+ * A node is black is rank(p(x)) = rank(x) + 1 or p(x) is undefined, and red
+ * if rank(p(x)) = rank(x).
  *
  * Reference: Data Structures and Network Algorithms by Tarjan.
  */
@@ -511,7 +511,8 @@ protected:
    * tree rooted at t, and return (t, excised) where t is the new root after 
    * deletion, and excised is the deleted node.
    */
-  static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t, const key_type& key) {
+  static std::pair<Nodeptr, Nodeptr> tarjan_delete (Nodeptr t,
+                                                    const key_type& key) {
     Nodeptr x, px;
     std::tie(x, px) = find(t, key);
     // Invariant:
@@ -545,6 +546,13 @@ protected:
     // rank(x) + 2 == rank(px)
     // Property 1) is violated.
 
+    fixup_erase(x, px);
+
+    return {Isnil(px) ? x : topmost(px),
+            excised.release()};
+  }
+
+  static void fixup_erase (Nodeptr x, Nodeptr px) {
     // Invariant:
     //    !Isnil(x0)
     auto YSibling = [] (Nodeptr x, Nodeptr px) -> Nodeptr {
@@ -557,7 +565,7 @@ protected:
       Nodeptr y = YSibling(x, px);
       // !Isnil(px) && !Isnil(x0) && !IsRed(x0) ⇒ !Isnil(y)
       //    Case 1) x0 is equal to excised which is black.
-      //    Case 2) x0 is as set in the loop body. Note that 
+      //    Case 2) x0 is as set in the loop body. Note that
       //      ¬no_violation ⇔ !IsRed(x0).
       assert(!Isnil(y));
 
@@ -603,9 +611,6 @@ protected:
         break;
       }
     }
-
-    return {Isnil(px) ? x : topmost(px),
-            excised.release()};
   }
 
   /**
